@@ -1,7 +1,8 @@
 /*
  * include/linux/display_state.h
  *
- * Copyright (c) 2016 Francisco Franco
+ * Copyright (c) 2016-2017 Francisco Franco
+ the display state (on/off) at any.
  * franciscofranco.1990@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
