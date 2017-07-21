@@ -625,7 +625,7 @@ static int enter_state(suspend_state_t state)
 	trace_suspend_resume(TPS("sync_filesystems"), 0, false);
 #endif
 
-	pr_debug("PM: Preparing system for sleep (%s)\n", pm_states[state]);
+	pr_debug("PM: Preparing system for sleep (%s)\n", mem_sleep_labels[state]);
 	pm_suspend_clear_flags();
 	error = suspend_prepare(state);
 	if (error)
@@ -635,7 +635,7 @@ static int enter_state(suspend_state_t state)
 		goto Finish;
 
 	trace_suspend_resume(TPS("suspend_enter"), state, false);
-	pr_debug("PM: Suspending system (%s)\n", pm_states[state]);
+	pr_debug("PM: Suspending system (%s)\n", mem_sleep_labels[state]);
 	pm_restrict_gfp_mask();
 	error = suspend_devices_and_enter(state);
 	pm_restore_gfp_mask();
