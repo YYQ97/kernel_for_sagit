@@ -2076,6 +2076,8 @@ struct task_struct {
 #ifdef CONFIG_ANDROID_SIMPLE_LMK
 	struct task_struct		*simple_lmk_next;
 #endif
+	atomic64_t *concurrent_active_time;
+	
 /* CPU-specific state of this task */
 	struct thread_struct thread;
 /*
