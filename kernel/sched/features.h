@@ -87,6 +87,8 @@
 #define SCHED_FEAT_ENERGY_AWARE 0
 #endif
 
+SCHED_FEAT(HISI_FILTER, true)
+
 /*
  * Minimum capacity capping. Keep track of minimum capacity factor when
  * minimum frequency available to a policy is modified.
