@@ -370,6 +370,7 @@ int sync_fence_wait(struct sync_fence *fence, long timeout)
 	ret = wait_event_interruptible_timeout(fence->wq,
 					       atomic_read(&fence->status) <= 0,
 					       timeout);
+					       
 	if (ret < 0) {
 		return ret;
 	} else if (ret == 0) {
