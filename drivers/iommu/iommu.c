@@ -440,7 +440,7 @@ rename:
 	blocking_notifier_call_chain(&group->notifier,
 				     IOMMU_GROUP_NOTIFY_ADD_DEVICE, dev);
 
-	trace_add_device_to_group(group->id, dev);
+//	trace_add_device_to_group(group->id, dev);
 
 	pr_info("Adding device %s to group %d\n", dev_name(dev), group->id);
 
@@ -498,7 +498,7 @@ void iommu_group_remove_device(struct device *dev)
 	sysfs_remove_link(group->devices_kobj, device->name);
 	sysfs_remove_link(&dev->kobj, "iommu_group");
 
-	trace_remove_device_from_group(group->id, dev);
+//	trace_remove_device_from_group(group->id, dev);
 
 	kfree(device->name);
 	kfree(device);
@@ -1157,7 +1157,7 @@ static int __iommu_attach_device(struct iommu_domain *domain,
 
 	ret = domain->ops->attach_dev(domain, dev);
 	if (!ret) {
-		trace_attach_device_to_domain(dev);
+//		trace_attach_device_to_domain(dev);
 		iommu_debug_attach_device(domain, dev);
 	}
 	return ret;
@@ -1199,7 +1199,7 @@ static void __iommu_detach_device(struct iommu_domain *domain,
 		return;
 
 	domain->ops->detach_dev(domain, dev);
-	trace_detach_device_from_domain(dev);
+//	trace_detach_device_from_domain(dev);
 }
 
 void iommu_detach_device(struct iommu_domain *domain, struct device *dev)
@@ -1414,11 +1414,11 @@ int iommu_map(struct iommu_domain *domain, unsigned long iova,
 	size_t orig_size = size;
 	int ret = 0;
 
-	trace_map_start(iova, paddr, size);
+//	trace_map_start(iova, paddr, size);
 	if (unlikely(domain->ops->map == NULL ||
 		     (domain->ops->pgsize_bitmap == 0UL &&
 		      !domain->ops->get_pgsize_bitmap))) {
-		trace_map_end(iova, paddr, size);
+//		trace_map_end(iova, paddr, size);
 		return -ENODEV;
 	}
 
@@ -1437,7 +1437,7 @@ int iommu_map(struct iommu_domain *domain, unsigned long iova,
 	if (!IS_ALIGNED(iova | paddr | size, min_pagesz)) {
 		pr_err("unaligned: iova 0x%lx pa %pa size 0x%zx min_pagesz 0x%x\n",
 		       iova, &paddr, size, min_pagesz);
-		trace_map_end(iova, paddr, size);
+//		trace_map_end(iova, paddr, size);
 		return -EINVAL;
 	}
 
@@ -1461,10 +1461,10 @@ int iommu_map(struct iommu_domain *domain, unsigned long iova,
 	/* unroll mapping in case something went wrong */
 	if (ret)
 		iommu_unmap(domain, orig_iova, orig_size - size);
-	else
-		trace_map(orig_iova, paddr, orig_size);
+//	else
+//		trace_map(orig_iova, paddr, orig_size);
 
-	trace_map_end(iova, paddr, size);
+//	trace_map_end(iova, paddr, size);
 	return ret;
 }
 EXPORT_SYMBOL_GPL(iommu_map);
@@ -1475,19 +1475,19 @@ static size_t __iommu_unmap(struct iommu_domain *domain,
 {
 	const struct iommu_ops *ops = domain->ops;
 	size_t unmapped_page, unmapped = 0;
-	unsigned long orig_iova = iova;
+//	unsigned long orig_iova = iova;
 	unsigned int min_pagesz;
 
-	trace_unmap_start(iova, 0, size);
+//	trace_unmap_start(iova, 0, size);
 	if (unlikely(ops->unmap == NULL ||
 		     (ops->pgsize_bitmap == 0UL &&
 		      !ops->get_pgsize_bitmap))) {
-		trace_unmap_end(iova, 0, size);
+//		trace_unmap_end(iova, 0, size);
 		return -ENODEV;
 	}
 
 	if (unlikely(!(domain->type & __IOMMU_DOMAIN_PAGING))) {
-		trace_unmap_end(iova, 0, size);
+//		trace_unmap_end(iova, 0, size);
 		return -EINVAL;
 	}
 
@@ -1502,7 +1502,7 @@ static size_t __iommu_unmap(struct iommu_domain *domain,
 	if (!IS_ALIGNED(iova | size, min_pagesz)) {
 		pr_err("unaligned: iova 0x%lx size 0x%zx min_pagesz 0x%x\n",
 		       iova, size, min_pagesz);
-		trace_unmap_end(iova, 0, size);
+//		trace_unmap_end(iova, 0, size);
 		return -EINVAL;
 	}
 
@@ -1532,8 +1532,8 @@ static size_t __iommu_unmap(struct iommu_domain *domain,
 	if (sync && ops->iotlb_sync)
 		ops->iotlb_sync(domain);
 
-	trace_unmap(orig_iova, size, unmapped);
-	trace_unmap_end(orig_iova, 0, size);
+//	trace_unmap(orig_iova, size, unmapped);
+//	trace_unmap_end(orig_iova, 0, size);
 	return unmapped;
 }
 
