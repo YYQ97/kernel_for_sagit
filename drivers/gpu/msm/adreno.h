@@ -766,7 +766,7 @@ struct adreno_gpudev {
 	struct adreno_irq *irq;
 	int num_prio_levels;
 	unsigned int vbif_xin_halt_ctrl0_mask;
-	/* GPU specific function hooks */
+	/* GPU specific function hooks */f
 #ifdef CONFIG_DEBUG_KERNEL
 	void (*irq_trace)(struct adreno_device *, unsigned int status);
 	void (*snapshot)(struct adreno_device *, struct kgsl_snapshot *);

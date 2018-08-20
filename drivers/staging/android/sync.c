@@ -103,7 +103,6 @@ void sync_timeline_signal(struct sync_timeline *obj)
 	unsigned long flags;
 	LIST_HEAD(signaled_pts);
 	struct sync_pt *pt, *next;
-
 	spin_lock_irqsave(&obj->child_list_lock, flags);
 
 	list_for_each_entry_safe(pt, next, &obj->active_list_head,
@@ -361,6 +360,10 @@ EXPORT_SYMBOL(sync_fence_cancel_async);
 int sync_fence_wait(struct sync_fence *fence, long timeout)
 {
 	long ret;
+<<<<<<< HEAD
+=======
+//	int i;
+>>>>>>> a0f2577f1068 (disable tracing/logging at various places Part 1)
 
 	if (timeout < 0)
 		timeout = MAX_SCHEDULE_TIMEOUT;
