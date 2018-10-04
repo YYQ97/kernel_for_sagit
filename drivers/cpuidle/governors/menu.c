@@ -325,7 +325,7 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
 	 * Use the performance multiplier and the user-configurable
 	 * latency_req to determine the maximum exit latency.
 	 */
-	interactivity_req = data->predicted_us / performance_multiplier(nr_iowaiters, cpu_load);
+	interactivity_req = data->predicted_us / performance_multiplier(nr_iowaiters);
 	if (latency_req > interactivity_req)
 		latency_req = interactivity_req;
 
