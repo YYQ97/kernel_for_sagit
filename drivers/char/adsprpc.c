@@ -3657,6 +3657,7 @@ static struct platform_driver fastrpc_driver = {
 		.name = "fastrpc",
 		.owner = THIS_MODULE,
 		.of_match_table = fastrpc_match_table,
+		.probe_type = PROBE_FORCE_SYNCHRONOUS,
 	},
 };
 
