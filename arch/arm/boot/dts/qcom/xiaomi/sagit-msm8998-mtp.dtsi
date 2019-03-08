@@ -439,6 +439,7 @@
 	03 03 03 02
 	03 03 03 02
 	03 03 03 03];
+	qcom,misc-trim-error-rc19p2-clk-reg-present;
 };
 
 &pm8998_vadc {
