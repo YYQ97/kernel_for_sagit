@@ -1577,6 +1577,7 @@ int __init devices_init(void)
 	return -ENOMEM;
 }
 
+#if 0
 static int device_check_offline(struct device *dev, void *not_used)
 {
 	int ret;
@@ -1587,6 +1588,7 @@ static int device_check_offline(struct device *dev, void *not_used)
 
 	return device_supports_offline(dev) && !dev->offline ? -EBUSY : 0;
 }
+#endif
 
 /**
  * device_offline - Prepare the device for hot-removal.
@@ -1601,8 +1603,9 @@ static int device_check_offline(struct device *dev, void *not_used)
  */
 int device_offline(struct device *dev)
 {
-	int ret;
+	int ret = 0;
 
+#if 0
 	if (dev->offline_disabled)
 		return -EPERM;
 
@@ -1623,6 +1626,7 @@ int device_offline(struct device *dev)
 		}
 	}
 	device_unlock(dev);
+#endif
 
 	return ret;
 }
@@ -1641,6 +1645,7 @@ int device_online(struct device *dev)
 {
 	int ret = 0;
 
+#if 0
 	device_lock(dev);
 	if (device_supports_offline(dev)) {
 		if (dev->offline) {
@@ -1654,6 +1659,7 @@ int device_online(struct device *dev)
 		}
 	}
 	device_unlock(dev);
+#endif
 
 	return ret;
 }
