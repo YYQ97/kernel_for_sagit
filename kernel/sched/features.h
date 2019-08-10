@@ -133,3 +133,10 @@
 #define SCHED_FEAT_WA_IDLE 1
 #define SCHED_FEAT_WA_WEIGHT 1
 #define SCHED_FEAT_WA_BIAS 1
+
+/*
+ * Inflate the effective utilization of SchedTune-boosted tasks, which
+ * generally leads to usage of higher frequencies.
+ * If disabled, boosts will only bias tasks to higher-capacity CPUs.
+ */
+#define SCHED_FEAT_SCHEDTUNE_BOOST_UTIL 1
