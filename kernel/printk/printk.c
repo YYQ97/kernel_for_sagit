@@ -648,6 +648,10 @@ static ssize_t devkmsg_write(struct kiocb *iocb, struct iov_iter *from)
 	 */
 	line = buf;
 	if (line[0] == '<') {
+		if (memcmp(line+3, "batteryd", sizeof("batteryd")-1) == 0 ||
+			   memcmp(line+3, "healthd", sizeof("healthd")-1) == 0)
+			goto free;
+		{
 		char *endp = NULL;
 		unsigned int u;
 
@@ -662,6 +666,7 @@ static ssize_t devkmsg_write(struct kiocb *iocb, struct iov_iter *from)
 			if (strstr(line, "healthd") || strstr(line, "cacert"))
 				goto free;
 		}
+		}
 	}
 
 	if (strncmp("healthd", line, 7) == 0) {
@@ -670,6 +675,7 @@ static ssize_t devkmsg_write(struct kiocb *iocb, struct iov_iter *from)
 	}
 
 	printk_emit(facility, level, NULL, 0, "%s", line);
+
 free:
 	kfree(buf);
 	return ret;
