@@ -5494,7 +5494,7 @@ static void soc_work_fn(struct work_struct *work)
 		prev_soc = soc;
 	}
 
-	schedule_delayed_work(
+	queue_delayed_work(system_power_efficient_wq, 
 		&chip->soc_work, msecs_to_jiffies(SOC_WORK_MS));
 }
 
@@ -5650,7 +5650,7 @@ static void soc_monitor_work(struct work_struct *work)
 			chip->param.batt_soc, chip->param.batt_raw_soc,
 			chip->param.batt_ma, chip->charge_status);
 
-	schedule_delayed_work(&chip->soc_monitor_work,
+	queue_delayed_work(system_power_efficient_wq, &chip->soc_monitor_work,
 			msecs_to_jiffies(MONITOR_SOC_WAIT_PER_MS));
 }
 
@@ -5910,7 +5910,7 @@ static int fg_gen3_resume(struct device *dev)
 	chip->param.update_now = true;
 	spin_unlock(&chip->suspend_lock);
 
-	schedule_delayed_work(&chip->soc_monitor_work,
+	queue_delayed_work(system_power_efficient_wq, &chip->soc_monitor_work,
 			msecs_to_jiffies(MONITOR_SOC_WAIT_MS));
 
 	return 0;
