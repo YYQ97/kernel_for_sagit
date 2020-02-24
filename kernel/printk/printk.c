@@ -659,6 +659,8 @@ static ssize_t devkmsg_write(struct kiocb *iocb, struct iov_iter *from)
 			endp++;
 			len -= endp - line;
 			line = endp;
+			if (strstr(line, "healthd") || strstr(line, "cacert"))
+				goto free;
 		}
 	}
 
@@ -668,6 +670,7 @@ static ssize_t devkmsg_write(struct kiocb *iocb, struct iov_iter *from)
 	}
 
 	printk_emit(facility, level, NULL, 0, "%s", line);
+free:
 	kfree(buf);
 	return ret;
 #else
@@ -2127,7 +2130,6 @@ void suspend_console(void)
 {
 	if (!console_suspend_enabled)
 		return;
-	printk("Suspending console(s) (use no_console_suspend to debug)\n");
 	console_lock();
 	console_suspended = 1;
 	up_console_sem();
