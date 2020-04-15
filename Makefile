@@ -660,6 +660,7 @@ ARCH_AFLAGS :=
 ARCH_CFLAGS :=
 include arch/$(SRCARCH)/Makefile
 
+ifdef CONFIG_LLVM_POLLY
 ifeq ($(cc-name),clang)
 KBUILD_CFLAGS	+= -O3
 KBUILD_CFLAGS	+= $(call cc-option, -mllvm -polly) \
@@ -672,6 +673,7 @@ KBUILD_CFLAGS	+= $(call cc-option, -mllvm -polly) \
 		   $(call cc-option, -mllvm -polly-invariant-load-hoisting)
 else
 KBUILD_CFLAGS	+= -O2
+endif
 endif
 
 ifeq ($(cc-name),gcc)
