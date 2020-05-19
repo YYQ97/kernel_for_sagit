@@ -4335,9 +4335,9 @@ static int ipa3_post_init(const struct ipa3_plat_drv_res *resource_p,
 		}
 		IPADBG("teth_bridge initialized");
 	}
-
+#ifdef CONFIG_DEBUG_FS
 	ipa3_debugfs_init();
-
+#endif
 	result = ipa3_uc_interface_init();
 	if (result)
 		IPAERR(":ipa Uc interface init failed (%d)\n", -result);
@@ -4360,10 +4360,8 @@ static int ipa3_post_init(const struct ipa3_plat_drv_res *resource_p,
 		IPADBG(":ntn init ok\n");
 
 	ipa3_register_panic_hdlr();
-
 	ipa3_ctx->q6_proxy_clk_vote_valid = true;
 	ipa3_ctx->q6_proxy_clk_vote_cnt++;
-
 	mutex_lock(&ipa3_ctx->lock);
 	ipa3_ctx->ipa_initialization_complete = true;
 	mutex_unlock(&ipa3_ctx->lock);
