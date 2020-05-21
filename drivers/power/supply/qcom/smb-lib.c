@@ -306,7 +306,6 @@ static const struct apsd_result *smblib_get_apsd_result(struct smb_charger *chg)
 		return result;
 	}
 	smblib_dbg(chg, PR_REGISTER, "APSD_RESULT = 0x%02x\n", stat);
-	pr_info("%s: APSD_RESULT = 0x%02x\n", __func__, stat);
 
 	stat &= APSD_RESULT_STATUS_MASK;
 
@@ -2052,7 +2051,6 @@ int smblib_get_prop_batt_charge_done(struct smb_charger *chg,
 		return rc;
 	}
 
-	pr_info("BATTERY_CHARGER_STATUS_1 = 0x%02x\n", stat);
 	stat = stat & BATTERY_CHARGER_STATUS_MASK;
 	val->intval = (stat == TERMINATE_CHARGE);
 
