@@ -23,14 +23,9 @@
 /* Number of internal IPC Logging log pages */
 #define GLINK_LBSRV_NUM_LOG_PAGES	3
 
-#define GLINK_LBSRV_IPC_LOG_STR(x...) ((void)0)
-
-#define LBSRV_INFO(x...) GLINK_LBSRV_IPC_LOG_STR("<LBSRV> " x)
-
-#define LBSRV_ERR(x...) do {                              \
-	pr_err("<LBSRV> " x); \
-	GLINK_LBSRV_IPC_LOG_STR("<LBSRV> " x);  \
-} while (0)
+#define GLINK_LBSRV_IPC_LOG_STR(x...)
+#define LBSRV_INFO(x...)
+#define LBSRV_ERR(x...) 
 
 enum ch_type {
 	CTL,

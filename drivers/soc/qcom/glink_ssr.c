@@ -29,11 +29,8 @@
 #define GLINK_SSR_EVENT_INIT ~0
 #define NUM_LOG_PAGES 3
 
-#define GLINK_SSR_LOG(x...) ((void)0)
-
-#define GLINK_SSR_ERR(x...) do { \
-	pr_err(x); \
-} while (0)
+#define GLINK_SSR_LOG(x...)
+#define GLINK_SSR_ERR(x...)
 
 /* Global restart counter */
 static uint32_t sequence_number;

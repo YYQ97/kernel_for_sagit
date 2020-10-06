@@ -38,25 +38,19 @@
 #define SMEM_VERSION 0x000B
 
 enum {
+	MSM_SMEM_NONE = 0,
 	MSM_SMEM_DEBUG = 1U << 0,
 	MSM_SMEM_INFO = 1U << 1,
 };
 
-static int msm_smem_debug_mask = MSM_SMEM_INFO;
+static int msm_smem_debug_mask = MSM_SMEM_NONE;
 module_param_named(debug_mask, msm_smem_debug_mask,
 			int, S_IRUGO | S_IWUSR | S_IWGRP);
 #define NUM_LOG_PAGES 4
-
-#define IPC_LOG(x...) ((void)0)
-
-#define LOG_ERR(x...) do {  \
-		pr_err(x);  \
-	} while (0)
-
-#define SMEM_DBG(x...) ((void)0)
-
-#define SMEM_INFO(x...) ((void)0)
-
+#define IPC_LOG(x...)
+#define LOG_ERR(x...)
+#define SMEM_DBG(x...)
+#define SMEM_INFO(x...)
 #define SMEM_SPINLOCK_SMEM_ALLOC       "S:3"
 
 static void *smem_ram_base;

@@ -345,40 +345,14 @@
 #define BDF_OFFSET(bus, devfn) \
 	((bus << 24) | (devfn << 16))
 
-#define PCIE_GEN_DBG(x...) do { \
-	if (msm_pcie_debug_mask) \
-		pr_alert(x); \
-	} while (0)
-
-#define PCIE_DBG(dev, fmt, arg...) do {			 \
-	if (msm_pcie_debug_mask)   \
-		pr_alert("%s: " fmt, __func__, arg);		  \
-	} while (0)
-
-#define PCIE_DBG2(dev, fmt, arg...) do {			 \
-	if (msm_pcie_debug_mask)   \
-		pr_alert("%s: " fmt, __func__, arg);              \
-	} while (0)
-
-#define PCIE_DBG3(dev, fmt, arg...) do {			 \
-	if (msm_pcie_debug_mask)   \
-		pr_alert("%s: " fmt, __func__, arg);              \
-	} while (0)
-
-#define PCIE_DUMP(dev, fmt, arg...) ((void)0)
-
-#define PCIE_DBG_FS(dev, fmt, arg...) do {			\
-	pr_alert("%s: " fmt, __func__, arg); \
-	} while (0)
-
-#define PCIE_INFO(dev, fmt, arg...) do {			 \
-	pr_info("%s: " fmt, __func__, arg);  \
-	} while (0)
-
-#define PCIE_ERR(dev, fmt, arg...) do {			 \
-	pr_err("%s: " fmt, __func__, arg);  \
-	} while (0)
-
+#define PCIE_GEN_DBG(x...)
+#define PCIE_DBG(dev, fmt, arg...)
+#define PCIE_DBG2(dev, fmt, arg...)
+#define PCIE_DBG3(dev, fmt, arg...)
+#define PCIE_DUMP(dev, fmt, arg...)
+#define PCIE_DBG_FS(dev, fmt, arg...)
+#define PCIE_INFO(dev, fmt, arg...)
+#define PCIE_ERR(dev, fmt, arg...)
 
 enum msm_pcie_res {
 	MSM_PCIE_RES_PARF,

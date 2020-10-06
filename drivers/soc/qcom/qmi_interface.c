@@ -40,8 +40,8 @@
 #define MAX_WQ_NAME_LEN 20
 #define QMI_REQ_RESP_LOG_PAGES 3
 #define QMI_IND_LOG_PAGES 2
-#define QMI_REQ_RESP_LOG(buf...) ((void)0)
-#define QMI_IND_LOG(buf...) ((void)0)
+#define QMI_REQ_RESP_LOG(buf...)
+#define QMI_IND_LOG(buf...)
 
 static LIST_HEAD(svc_event_nb_list);
 static DEFINE_MUTEX(svc_event_nb_list_lock);
