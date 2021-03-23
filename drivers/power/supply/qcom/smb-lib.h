@@ -30,14 +30,6 @@ enum print_reason {
 	PR_OEM          = BIT(5),
 };
 
-enum hvdcp3_type {
-	HVDCP3_NONE = 0,
-	HVDCP3_CLASSA_18W,
-	HVDCP3_CLASSB_27W,
-	USB_PD,
-	HVDCP2_TYPE,
-};
-
 #define DEFAULT_VOTER			"DEFAULT_VOTER"
 #define USER_VOTER			"USER_VOTER"
 #define PD_VOTER			"PD_VOTER"
