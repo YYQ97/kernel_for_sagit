@@ -5482,9 +5482,6 @@ static void soc_work_fn(struct work_struct *work)
 
 	cycle_count = fg_get_cycle_count(chip);
 
-	pr_debug("adjust_soc: s %d r %d i %d v %d t %d cc %d m 0x%02x\n",
-			soc, esr_uohms, curr_ua, volt_uv, temp, cycle_count, msoc);
-
 	if (temp < 450 && chip->last_batt_temp >= 450) {
 		/* follow the way that fg_notifier_cb use wake lock */
 		pm_stay_awake(chip->dev);
@@ -5622,10 +5619,6 @@ static void fg_battery_soc_smooth_tracking(struct fg_chip *chip)
 		if (chip->batt_psy)
 			power_supply_changed(chip->batt_psy);
 	}
-
-	pr_debug("soc:%d, last_soc:%d, raw_soc:%d, soc_changed:%d.\n",
-			chip->param.batt_soc, last_batt_soc,
-			chip->param.batt_raw_soc, soc_changed);
 }
 
 #define MONITOR_SOC_WAIT_MS					1000
@@ -5651,10 +5644,6 @@ static void soc_monitor_work(struct work_struct *work)
 
 	if (chip->soc_reporting_ready)
 		fg_battery_soc_smooth_tracking(chip);
-
-	pr_debug("soc:%d, raw_soc:%d, c:%d, s:%d\n",
-			chip->param.batt_soc, chip->param.batt_raw_soc,
-			chip->param.batt_ma, chip->charge_status);
 
 	queue_delayed_work(system_power_efficient_wq, &chip->soc_monitor_work,
 			msecs_to_jiffies(MONITOR_SOC_WAIT_PER_MS));
