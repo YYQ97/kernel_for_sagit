@@ -438,11 +438,6 @@ static inline int clk_osm_read_reg(struct clk_osm *c, u32 offset)
 	return readl_relaxed((char *)c->vbases[OSM_BASE] + offset);
 }
 
-static inline int clk_osm_read_reg(struct clk_osm *c, u32 offset)
-{
-	return readl_relaxed((char *)c->vbases[OSM_BASE] + offset);
-}
-
 static inline int clk_osm_mb(struct clk_osm *c, int base)
 {
 	return readl_relaxed((char *)c->vbases[base] + VERSION_REG);
