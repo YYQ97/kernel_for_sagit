@@ -631,7 +631,7 @@ KBUILD_AFLAGS	+= $(CLANG_FLAGS)
 endif
 
 ifdef CONFIG_LTO
-LTO_CFLAGS    := -flto -flto=jobserver -fipa-pta -fno-fat-lto-objects \
+LTO_CFLAGS    := -flto -flto=auto -fipa-pta -fno-fat-lto-objects \
                  -fuse-linker-plugin -fwhole-program
 KBUILD_CFLAGS += $(LTO_CFLAGS) --param=max-inline-insns-auto=1000
 LTO_LDFLAGS   := $(LTO_CFLAGS) -Wno-lto-type-mismatch -Wno-psabi \
@@ -690,6 +690,15 @@ ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS	+= -Os
 else
 KBUILD_CFLAGS   += -O3
+endif
+
+ifeq ($(cc-name),gcc)
+KBUILD_CFLAGS	+= -mcpu=cortex-a73.cortex-a53 -mtune=cortex-a73.cortex-a53
+KBUILD_AFLAGS	+= -mcpu=cortex-a73.cortex-a53 -mtune=cortex-a73.cortex-a53
+endif
+ifeq ($(cc-name),clang)
+KBUILD_CFLAGS	+= -mcpu=cortex-a53 -mtune=cortex-a53
+KBUILD_AFLAGS	+= -mcpu=cortex-a53 -mtune=cortex-a53
 endif
 
 ifdef CONFIG_CC_WERROR
