@@ -22,6 +22,7 @@
 #include "msm8998-mdss-panels.dtsi"
 #include "msm8998-audio.dtsi"
 #include "msm8998-mdss.dtsi"
+#include "msm8998-common-mtp.dtsi"
 
 #include "chiron-camera-sensor-mtp.dtsi"
 
@@ -399,6 +400,13 @@
 	qcom,wave-shape = "sine";
 	qcom,vmax-mv = <2552>;
 	qcom,brake-pattern = <0x3 0x2 0x0 0x0>;
+	qcom,disable_force_back_emf_delay;
+	qcom,vmax-overbrake-mv = <3596>;
+	qcom,brake-pattern-count = <4>;
+	qcom,brake-pattern-arry = <0x2 0x2 0x0 0x0
+	0x3 0x2 0x1 0x0
+	0x3 0x2 0x1 0x0
+	0x3 0x3 0x3 0x0>;
 };
 
 &pm8998_vadc {
