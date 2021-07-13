@@ -411,8 +411,6 @@ struct synaptics_rmi4_data {
 	bool dump_flags;
 #endif
 
-	bool enable_reversed_keys;
-
 	int (*reset_device)(struct synaptics_rmi4_data *rmi4_data,
 			bool rebuild);
 	int (*irq_enable)(struct synaptics_rmi4_data *rmi4_data, bool enable,
@@ -442,8 +440,6 @@ struct synaptics_rmi4_data {
 	struct clk *core_clk;
 	struct clk *iface_clk;
 #endif
-
-	struct proc_dir_entry *input_proc;
 };
 
 struct synaptics_dsx_bus_access {

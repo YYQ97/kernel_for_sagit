@@ -56,8 +56,6 @@
 #include "mdss_smmu.h"
 #include "mdss_mdp.h"
 
-#include "mdss_livedisplay.h"
-
 #ifdef CONFIG_FB_MSM_TRIPLE_BUFFER
 #define MDSS_FB_NUM 3
 #else
@@ -965,7 +963,7 @@ static int mdss_fb_create_sysfs(struct msm_fb_data_type *mfd)
 	rc = sysfs_create_group(&mfd->fbi->dev->kobj, &mdss_fb_attr_group);
 	if (rc)
 		pr_err("sysfs group creation failed, rc=%d\n", rc);
-	return mdss_livedisplay_create_sysfs(mfd);
+	return rc;
 }
 
 static void mdss_fb_remove_sysfs(struct msm_fb_data_type *mfd)
@@ -5223,25 +5221,6 @@ int mdss_fb_get_phys_info(dma_addr_t *start, unsigned long *len, int fb_num)
 	return 0;
 }
 EXPORT_SYMBOL(mdss_fb_get_phys_info);
-
-#ifdef CONFIG_MACH_XIAOMI_MSM8998
-bool mdss_panel_is_prim(void *fbinfo)
-{
-	struct msm_fb_data_type *mfd;
-	struct mdss_panel_info *pinfo;
-	struct fb_info *fbi = fbinfo;
-
-	if (!fbi)
-		return false;
-	mfd = fbi->par;
-	if (!mfd)
-		return false;
-	pinfo = mfd->panel_info;
-	if (!pinfo)
-		return false;
-	return pinfo->is_prim_panel;
-}
-#endif
 
 int __init mdss_fb_init(void)
 {
