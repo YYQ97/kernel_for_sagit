@@ -2050,6 +2050,12 @@ config CC_WERROR
 
 	 If unsure, say N.
 
+config KERNEL_KMSG_WRITE
+	bool "Allow user space to write logs to the kernel"
+	default y
+	help
+	 If you want to make dmesg only show the kernel log, say N.
+
 source "samples/Kconfig"
 
 source "lib/Kconfig.kgdb"
