@@ -1025,7 +1025,7 @@ static int set_sdp_current(struct smb_charger *chg, int icl_ua)
 		icl_options = CFG_USB3P0_SEL_BIT | USB51_MODE_BIT;
 		break;
 	default:
-		smblib_err(chg, "ICL %duA isn't supported for SDP\n", icl_ua);
+//		smblib_err(chg, "ICL %duA isn't supported for SDP\n", icl_ua);
 		return -EINVAL;
 	}
 
@@ -1095,7 +1095,7 @@ int smblib_set_icl_current(struct smb_charger *chg, int icl_ua)
 		&& (chg->real_charger_type == POWER_SUPPLY_TYPE_USB)) {
 		rc = set_sdp_current(chg, icl_ua);
 		if (rc < 0) {
-			smblib_err(chg, "Couldn't set SDP ICL rc=%d\n", rc);
+//			smblib_err(chg, "Couldn't set SDP ICL rc=%d\n", rc);
 			goto enable_icl_changed_interrupt;
 		}
 	} else {
@@ -3489,7 +3489,7 @@ int smblib_get_prop_slave_current_now(struct smb_charger *chg,
 irqreturn_t smblib_handle_debug(int irq, void *data)
 {
 	struct smb_irq_data *irq_data = data;
-	struct smb_charger *chg = irq_data->parent_data;
+	struct smb_charger __maybe_unused *chg = irq_data->parent_data;
 
 	smblib_dbg(chg, PR_INTERRUPT, "IRQ: %s\n", irq_data->name);
 	return IRQ_HANDLED;
@@ -3585,7 +3585,7 @@ irqreturn_t smblib_handle_usb_psy_changed(int irq, void *data)
 irqreturn_t smblib_handle_usbin_collapse(int irq, void *data)
 {
 	struct smb_irq_data *irq_data = data;
-	struct smb_charger *chg = irq_data->parent_data;
+	struct smb_charger __maybe_unused *chg = irq_data->parent_data;
 
 	smblib_dbg(chg, PR_OEM, "IRQ: %s\n", irq_data->name);
 	return IRQ_HANDLED;
