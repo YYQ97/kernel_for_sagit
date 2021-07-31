@@ -3337,7 +3337,7 @@ int smblib_get_prop_slave_current_now(struct smb_charger *chg,
 irqreturn_t smblib_handle_debug(int irq, void *data)
 {
 	struct smb_irq_data *irq_data = data;
-	struct smb_charger *chg = irq_data->parent_data;
+	struct smb_charger __maybe_unused *chg = irq_data->parent_data;
 
 	smblib_dbg(chg, PR_INTERRUPT, "IRQ: %s\n", irq_data->name);
 	return IRQ_HANDLED;
