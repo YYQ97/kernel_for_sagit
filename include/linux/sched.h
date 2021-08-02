@@ -3617,12 +3617,8 @@ int reset_stune_boost(int slot);
 
 int get_sched_boost(void);
 
-int do_prefer_idle(char *st_name, u64 prefer_idle);
+int do_prefer_idle(u64 prefer_idle);
 
-static inline int do_prefer_idle(char *st_name, u64 prefer_idle)
-{
-	return 0;
-}
 #endif /* CONFIG_DYNAMIC_STUNE_BOOST */
 
 #endif
