@@ -38,17 +38,13 @@ static u64 last_input_time;
 static inline void set_boost(bool enable)
 {
 	if (enable) {
-		input_stune_boost_active = !do_stune_boost("top-app",
-				input_stune_boost, &input_stune_slot);
+		input_stune_boost_active = !do_stune_boost(input_stune_boost, &input_stune_slot);
 
-		do_prefer_idle("top-app", 1);
-		do_prefer_idle("foreground", 1);
+		do_prefer_idle(1);
 	} else {
-		input_stune_boost_active = reset_stune_boost("top-app",
-				input_stune_slot);
+		input_stune_boost_active = reset_stune_boost(input_stune_slot);
 
-		do_prefer_idle("top-app", 0);
-		do_prefer_idle("foreground", 0);
+		do_prefer_idle(0);
 	}
 }
 
