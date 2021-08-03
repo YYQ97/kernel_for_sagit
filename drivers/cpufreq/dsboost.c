@@ -10,12 +10,15 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
-
+ 
+#include <linux/fb.h>
 #include <linux/input.h>
 #include <linux/moduleparam.h>
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/time.h>
+
+struct notifier_block fb_notifier;
 
 static struct workqueue_struct *dsboost_wq;
 
@@ -152,9 +155,25 @@ static struct input_handler dsboost_input_handler = {
 	.id_table       = dsboost_ids,
 };
 
+static int fb_notifier_cb(struct notifier_block *nb, unsigned long action,
+			  void *data)
+{
+	int *blank = ((struct fb_event *) data)->data;
+
+	if (action != FB_EARLY_EVENT_BLANK)
+		return NOTIFY_OK;
+
+	/* Remove input boosting on screen suspend */
+	if (input_stune_boost_active && *blank != FB_BLANK_UNBLANK)
+		cancel_delayed_work_sync(&input_boost_rem);
+
+	return NOTIFY_OK;
+}
+
 static void dsboost_exit(void)
 {
 	input_unregister_handler(&dsboost_input_handler);
+	fb_unregister_client(&fb_notifier);
 	destroy_workqueue(dsboost_wq);
 }
 
@@ -162,16 +181,21 @@ static int dsboost_init(void)
 {
 	int ret;
 
-	dsboost_wq = alloc_workqueue("dsboost_wq", WQ_HIGHPRI, 0);
+	dsboost_wq = alloc_workqueue("dsboost_wq", WQ_FREEZABLE, 0);
 	if (!dsboost_wq) {
-		ret = -ENOMEM;
-		goto err_wq;
+		return -ENOMEM;
 	}
 
 	INIT_WORK(&input_boost_work, do_input_boost);
 	INIT_DELAYED_WORK(&input_boost_rem, do_input_boost_rem);
 
 	ret = input_register_handler(&dsboost_input_handler);
+	if (ret)
+		goto err_wq;
+		
+	fb_notifier.notifier_call = fb_notifier_cb;
+	fb_notifier.priority = INT_MAX;
+	ret = fb_register_client(&fb_notifier);
 	if (ret)
 		goto err_input;
 
