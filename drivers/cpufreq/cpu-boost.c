@@ -178,7 +178,6 @@ static void do_input_boost_rem(struct work_struct *work)
 
 	/* Update policies for all online CPUs */
 	update_policy_online();
-
 }
 
 static void do_input_boost(struct work_struct *work)
