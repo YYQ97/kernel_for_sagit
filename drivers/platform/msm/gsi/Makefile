@@ -1,1 +1,4 @@
-obj-$(CONFIG_GSI) += gsi.o gsi_dbg.o
+obj-$(CONFIG_GSI) += gsi.o 
+ifeq ($(CONFIG_DEBUGFS),y)
+gsi_dbg.o
+endif
