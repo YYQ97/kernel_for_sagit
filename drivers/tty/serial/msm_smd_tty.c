@@ -46,7 +46,7 @@
 
 #define SMD_TTY_ERR(buf...) ((void)0)
 
-static void *smd_tty_log_ctx;
+static void __maybe_unused *smd_tty_log_ctx;
 static bool smd_tty_in_suspend;
 static bool smd_tty_read_in_suspend;
 static struct wakeup_source read_in_suspend_ws;
