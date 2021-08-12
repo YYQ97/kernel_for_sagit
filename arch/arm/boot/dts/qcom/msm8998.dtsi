@@ -34,7 +34,7 @@
 
 	chosen {
 		stdout-path = "serial0";
-		bootargs = "quiet rcupdate.rcu_expedited=1 noirqdebug androidboot.selinux=permissive";
+		bootargs = "quiet noirqdebug androidboot.selinux=permissive";
 	};
 
 	cpus {
@@ -726,7 +726,7 @@
 
 	cpubw: qcom,cpubw {
 		compatible = "qcom,devbw";
-		governor = "performance";
+		governor = "bw_hwmon";
 		qcom,src-dst-ports = <1 512>;
 		qcom,active-only;
 		qcom,bw-tbl =
