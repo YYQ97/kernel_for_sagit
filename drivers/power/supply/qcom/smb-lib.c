@@ -852,7 +852,7 @@ static int set_sdp_current(struct smb_charger *chg, int icl_ua)
 		icl_options = CFG_USB3P0_SEL_BIT | USB51_MODE_BIT;
 		break;
 	default:
-		smblib_err(chg, "ICL %duA isn't supported for SDP\n", icl_ua);
+//		smblib_err(chg, "ICL %duA isn't supported for SDP\n", icl_ua);
 		return -EINVAL;
 	}
 
@@ -929,7 +929,7 @@ int smblib_set_icl_current(struct smb_charger *chg, int icl_ua)
 		&& (chg->real_charger_type == POWER_SUPPLY_TYPE_USB)) {
 		rc = set_sdp_current(chg, icl_ua);
 		if (rc < 0) {
-			smblib_err(chg, "Couldn't set SDP ICL rc=%d\n", rc);
+//			smblib_err(chg, "Couldn't set SDP ICL rc=%d\n", rc);
 			goto enable_icl_changed_interrupt;
 		}
 	} else {
