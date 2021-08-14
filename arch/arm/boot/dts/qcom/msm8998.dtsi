@@ -3499,7 +3499,6 @@
 #include "msm8998-ion.dtsi"
 #include "msm8998-camera.dtsi"
 #include "msm8998-vidc.dtsi"
-#include "msm8998-coresight.dtsi"
 #include "msm8998-bus.dtsi"
 #include "msm8998-gpu.dtsi"
 #include "msm8998-pinctrl.dtsi"
