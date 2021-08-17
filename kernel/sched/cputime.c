@@ -880,25 +880,29 @@ cputime_t task_gtime(struct task_struct *t)
  * add up the pending nohz execution time since the last
  * cputime snapshot.
  */
-void task_cputime(struct task_struct *t, cputime_t *utime, cputime_t *stime)
+static void
+fetch_task_cputime(struct task_struct *t,
+		   cputime_t *u_dst, cputime_t *s_dst,
+		   cputime_t *u_src, cputime_t *s_src,
+		   cputime_t *udelta, cputime_t *sdelta)
 {
-	cputime_t delta;
 	unsigned int seq;
-
-	if (!vtime_accounting_enabled()) {
-		*utime = t->utime;
-		*stime = t->stime;
-		return;
-	}
+	unsigned long long delta;
 
 	do {
-		seq = read_seqcount_begin(&t->vtime_seqcount);
+		*udelta = 0;
+		*sdelta = 0;
 
-		*utime = t->utime;
-		*stime = t->stime;
+		seq = read_seqbegin(&t->vtime_seqlock);
+
+		if (u_dst)
+			*u_dst = *u_src;
+		if (s_dst)
+			*s_dst = *s_src;
 
 		/* Task is sleeping, nothing to add */
-		if (t->vtime_snap_whence == VTIME_INACTIVE || is_idle_task(t))
+		if (t->vtime_snap_whence == VTIME_SLEEPING ||
+		    is_idle_task(t))
 			continue;
 
 		delta = vtime_delta(t);
@@ -907,10 +911,25 @@ void task_cputime(struct task_struct *t, cputime_t *utime, cputime_t *stime)
 		 * Task runs either in user or kernel space, add pending nohz time to
 		 * the right place.
 		 */
-		if (t->vtime_snap_whence == VTIME_USER || t->flags & PF_VCPU)
-			*utime += delta;
-		else if (t->vtime_snap_whence == VTIME_SYS)
-			*stime += delta;
-	} while (read_seqcount_retry(&t->vtime_seqcount, seq));
+		if (t->vtime_snap_whence == VTIME_USER || t->flags & PF_VCPU) {
+			*udelta = delta;
+		} else {
+			if (t->vtime_snap_whence == VTIME_SYS)
+				*sdelta = delta;
+		}
+	} while (read_seqretry(&t->vtime_seqlock, seq));
+}
+
+
+void task_cputime(struct task_struct *t, cputime_t *utime, cputime_t *stime)
+{
+	cputime_t udelta, sdelta;
+
+	fetch_task_cputime(t, utime, stime, &t->utime,
+			   &t->stime, &udelta, &sdelta);
+	if (utime)
+		*utime += udelta;
+	if (stime)
+		*stime += sdelta;
 }
 #endif /* CONFIG_VIRT_CPU_ACCOUNTING_GEN */
