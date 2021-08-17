@@ -231,11 +231,11 @@ void account_system_time(struct task_struct *p, int hardirq_offset,
  * Account for involuntary wait time.
  * @cputime: the cpu time spent in involuntary wait
  */
-void account_steal_time(u64 cputime)
+void account_steal_time(cputime_t cputime)
 {
 	u64 *cpustat = kcpustat_this_cpu->cpustat;
 
-	cpustat[CPUTIME_STEAL] += cputime;
+	cpustat[CPUTIME_STEAL] += (__force u64) cputime;
 }
 
 /*
@@ -263,15 +263,14 @@ static __always_inline cputime_t steal_account_process_time(cputime_t maxtime)
 #ifdef CONFIG_PARAVIRT
 	if (static_key_false(&paravirt_steal_enabled)) {
 		cputime_t steal_cputime;
-		u64 steal, rounded;
+		u64 steal;
 
 		steal = paravirt_steal_clock(smp_processor_id());
 		steal -= this_rq()->prev_steal_time;
 
 		steal_cputime = min(nsecs_to_cputime(steal), maxtime);
-		rounded = cputime_to_nsecs(steal_cputime);
-		account_steal_time(rounded);
-		this_rq()->prev_steal_time += rounded;
+		account_steal_time(steal_cputime);
+		this_rq()->prev_steal_time += cputime_to_nsecs(steal_cputime);
 
 		return steal_cputime;
 	}
