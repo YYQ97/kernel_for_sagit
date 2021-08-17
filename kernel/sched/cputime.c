@@ -175,7 +175,7 @@ void account_guest_time(struct task_struct *p, cputime_t cputime)
 	/* Add guest time to process. */
 	p->utime += cputime;
 	account_group_user_time(p, cputime);
-	p->gtime += cputime_to_nsecs(cputime);
+	p->gtime += cputime;
 
 	/* Add guest time to cpustat. */
 	if (task_nice(p) > 0) {
@@ -853,10 +853,10 @@ void vtime_init_idle(struct task_struct *t, int cpu)
 	local_irq_restore(flags);
 }
 
-u64 task_gtime(struct task_struct *t)
+cputime_t task_gtime(struct task_struct *t)
 {
 	unsigned int seq;
-	u64 gtime;
+	cputime_t gtime;
 
 	if (!context_tracking_is_enabled())
 		return t->gtime;
@@ -866,7 +866,7 @@ u64 task_gtime(struct task_struct *t)
 
 		gtime = t->gtime;
 		if (t->vtime_snap_whence == VTIME_SYS && t->flags & PF_VCPU)
-			gtime += cputime_to_nsecs(vtime_delta(t));
+			gtime += vtime_delta(t);
 
 	} while (read_seqretry(&t->vtime_seqlock, seq));
 
