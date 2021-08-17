@@ -581,8 +581,8 @@ struct cpu_itimer {
  */
 struct prev_cputime {
 #ifndef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
-	u64 utime;
-	u64 stime;
+	cputime_t utime;
+	cputime_t stime;
 	raw_spinlock_t lock;
 #endif
 };
@@ -597,8 +597,8 @@ static inline void prev_cputime_init(struct prev_cputime *prev)
 
 /**
  * struct task_cputime - collected CPU time counts
- * @utime:		time spent in user mode, in nanoseconds
- * @stime:		time spent in kernel mode, in nanoseconds
+ * @utime:		time spent in user mode, in &cputime_t units
+ * @stime:		time spent in kernel mode, in &cputime_t units
  * @sum_exec_runtime:	total time spent on the CPU, in nanoseconds
  *
  * This structure groups together three kinds of CPU time that are tracked for
@@ -606,8 +606,8 @@ static inline void prev_cputime_init(struct prev_cputime *prev)
  * these counts together and treat all three of them in parallel.
  */
 struct task_cputime {
-	u64 utime;
-	u64 stime;
+	cputime_t utime;
+	cputime_t stime;
 	unsigned long long sum_exec_runtime;
 };
 
@@ -807,7 +807,7 @@ struct signal_struct {
 	 * in __exit_signal, except for the group leader.
 	 */
 	seqlock_t stats_lock;
-	u64 utime, stime, cutime, cstime;
+	cputime_t utime, stime, cutime, cstime;
 	u64 gtime;
 	u64 cgtime;
 	struct prev_cputime prev_cputime;
@@ -1767,9 +1767,9 @@ struct task_struct {
 	int __user *set_child_tid;		/* CLONE_CHILD_SETTID */
 	int __user *clear_child_tid;		/* CLONE_CHILD_CLEARTID */
 
-	u64 utime, stime;
+	cputime_t utime, stime;
 #ifdef CONFIG_ARCH_HAS_SCALED_CPUTIME
-	u64 utimescaled, stimescaled;
+	cputime_t utimescaled, stimescaled;
 #endif
 	u64 gtime;
 #ifdef CONFIG_CPU_FREQ_TIMES
@@ -2324,11 +2324,11 @@ static inline void put_task_struct(struct task_struct *t)
 
 #ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
 extern void task_cputime(struct task_struct *t,
-			 u64 *utime, u64 *stime);
+			 cputime_t *utime, cputime_t *stime);
 extern u64 task_gtime(struct task_struct *t);
 #else
 static inline void task_cputime(struct task_struct *t,
-				u64 *utime, u64 *stime)
+				cputime_t *utime, cputime_t *stime)
 {
 	*utime = t->utime;
 	*stime = t->stime;
@@ -2342,16 +2342,16 @@ static inline u64 task_gtime(struct task_struct *t)
 
 #ifdef CONFIG_ARCH_HAS_SCALED_CPUTIME
 static inline void task_cputime_scaled(struct task_struct *t,
-				       u64 *utimescaled,
-				       u64 *stimescaled)
+				       cputime_t *utimescaled,
+				       cputime_t *stimescaled)
 {
 	*utimescaled = t->utimescaled;
 	*stimescaled = t->stimescaled;
 }
 #else
 static inline void task_cputime_scaled(struct task_struct *t,
-				       u64 *utimescaled,
-				       u64 *stimescaled)
+				       cputime_t *utimescaled,
+				       cputime_t *stimescaled)
 {
 	task_cputime(t, utimescaled, stimescaled);
 }
@@ -2360,26 +2360,18 @@ static inline void task_cputime_scaled(struct task_struct *t,
 static inline void task_cputime_t(struct task_struct *t,
 				  cputime_t *utime, cputime_t *stime)
 {
-	u64 ut, st;
-
-	task_cputime(t, &ut, &st);
-	*utime = nsecs_to_cputime(ut);
-	*stime = nsecs_to_cputime(st);
+	task_cputime(t, utime, stime);
 }
 
 static inline void task_cputime_t_scaled(struct task_struct *t,
 					 cputime_t *utimescaled,
 					 cputime_t *stimescaled)
 {
-	u64 ut, st;
-
-	task_cputime_scaled(t, &ut, &st);
-	*utimescaled = nsecs_to_cputime(ut);
-	*stimescaled = nsecs_to_cputime(st);
+	task_cputime_scaled(t, utimescaled, stimescaled);
 }
 
-extern void task_cputime_adjusted(struct task_struct *p, u64 *ut, u64 *st);
-extern void thread_group_cputime_adjusted(struct task_struct *p, u64 *ut, u64 *st);
+extern void task_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st);
+extern void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st);
 
 /*
  * Per process flags
@@ -3485,14 +3477,9 @@ void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times);
 void thread_group_cputimer(struct task_struct *tsk, struct task_cputime_t *times);
 
 static inline void thread_group_cputime_t(struct task_struct *tsk,
-					  struct task_cputime_t *cputime)
+					  struct task_cputime_t *times)
 {
-	struct task_cputime times;
-
-	thread_group_cputime(tsk, &times);
-	cputime->utime = nsecs_to_cputime(times.utime);
-	cputime->stime = nsecs_to_cputime(times.stime);
-	cputime->sum_exec_runtime = times.sum_exec_runtime;
+	thread_group_cputime(tsk, (struct task_cputime *)times);
 }
 
 /*
