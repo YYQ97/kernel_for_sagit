@@ -22,8 +22,10 @@
  * task when irq is in progress while we read rq->clock. That is a worthy
  * compromise in place of having locks on each irq in account_system_time.
  */
-DEFINE_PER_CPU(struct irqtime, cpu_irqtime);
+DEFINE_PER_CPU(u64, cpu_hardirq_time);
+DEFINE_PER_CPU(u64, cpu_softirq_time);
 
+static DEFINE_PER_CPU(u64, irq_start_time);
 static int sched_clock_irqtime;
 
 void enable_sched_clock_irqtime(void)
@@ -36,13 +38,16 @@ void disable_sched_clock_irqtime(void)
 	sched_clock_irqtime = 0;
 }
 
+#ifndef CONFIG_64BIT
+DEFINE_PER_CPU(seqcount_t, irq_time_seq);
+#endif /* CONFIG_64BIT */
+
 /*
  * Called before incrementing preempt_count on {soft,}irq_enter
  * and before decrementing preempt_count on {soft,}irq_exit.
  */
 void irqtime_account_irq(struct task_struct *curr)
 {
-	struct irqtime *irqtime = this_cpu_ptr(&cpu_irqtime);
 	s64 delta;
 	int cpu;
 #ifdef CONFIG_SCHED_WALT
@@ -57,10 +62,10 @@ void irqtime_account_irq(struct task_struct *curr)
 #ifdef CONFIG_SCHED_WALT
 	wallclock = sched_clock_cpu(cpu);
 #endif
-	delta = sched_clock_cpu(cpu) - irqtime->irq_start_time;
-	irqtime->irq_start_time += delta;
+	delta = sched_clock_cpu(cpu) - __this_cpu_read(irq_start_time);
+	__this_cpu_add(irq_start_time, delta);
 
-	u64_stats_update_begin(&irqtime->sync);
+	irq_time_write_begin();
 	/*
 	 * We do not account for softirq time from ksoftirqd here.
 	 * We want to continue accounting softirq time to ksoftirqd thread
@@ -68,15 +73,15 @@ void irqtime_account_irq(struct task_struct *curr)
 	 * that do not consume any time, but still wants to run.
 	 */
 	if (hardirq_count())
-		irqtime->hardirq_time += delta;
+		__this_cpu_add(cpu_hardirq_time, delta);
 	else if (in_serving_softirq() && curr != this_cpu_ksoftirqd())
-		irqtime->softirq_time += delta;
+		__this_cpu_add(cpu_softirq_time, delta);
 #ifdef CONFIG_SCHED_WALT
 	else
 		account = false;
 #endif
 
-        u64_stats_update_end(&irqtime->sync);
+	irq_time_write_end();
 #ifdef CONFIG_SCHED_WALT
 	if (account)
 		walt_account_irqtime(cpu, curr, delta, wallclock);
@@ -88,10 +93,9 @@ static cputime_t irqtime_account_hi_update(cputime_t maxtime)
 {
 	u64 *cpustat = kcpustat_this_cpu->cpustat;
 	cputime_t irq_cputime;
-	u64 nsecs;
 
-	nsecs = __this_cpu_read(cpu_irqtime.hardirq_time);
-	irq_cputime = nsecs_to_cputime64(nsecs) - cpustat[CPUTIME_IRQ];
+	irq_cputime = nsecs_to_cputime64(__this_cpu_read(cpu_hardirq_time)) -
+		      cpustat[CPUTIME_IRQ];
 	irq_cputime = min(irq_cputime, maxtime);
 	cpustat[CPUTIME_IRQ] += irq_cputime;
 
@@ -102,10 +106,9 @@ static cputime_t irqtime_account_si_update(cputime_t maxtime)
 {
 	u64 *cpustat = kcpustat_this_cpu->cpustat;
 	cputime_t softirq_cputime;
-	u64 nsecs;
 
-	nsecs = __this_cpu_read(cpu_irqtime.softirq_time);
-	softirq_cputime = nsecs_to_cputime64(nsecs) - cpustat[CPUTIME_SOFTIRQ];
+	softirq_cputime = nsecs_to_cputime64(__this_cpu_read(cpu_softirq_time)) -
+			  cpustat[CPUTIME_SOFTIRQ];
 	softirq_cputime = min(softirq_cputime, maxtime);
 	cpustat[CPUTIME_SOFTIRQ] += softirq_cputime;
 
