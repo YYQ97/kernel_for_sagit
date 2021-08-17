@@ -1778,13 +1778,13 @@ struct task_struct {
 #endif
 	struct prev_cputime prev_cputime;
 #ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
-	seqcount_t vtime_seqcount;
-	unsigned long long vtime_starttime;
+	seqlock_t vtime_seqlock;
+	unsigned long long vtime_snap;
 	enum {
 		VTIME_SLEEPING = 0,
 		VTIME_USER,
 		VTIME_SYS,
-	} vtime_state;
+	} vtime_snap_whence;
 #endif
 	unsigned long nvcsw, nivcsw; /* context switch counts */
 	u64 start_time;		/* monotonic time in nsec */
