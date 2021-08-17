@@ -5,7 +5,6 @@
 #include <linux/static_key.h>
 #include <linux/context_tracking.h>
 #include <linux/cpufreq_times.h>
-#include <linux/cputime.h>
 #include "sched.h"
 #include "walt.h"
 
@@ -160,22 +159,22 @@ void account_user_time(struct task_struct *p, u64 cputime)
  * @p: the process that the cpu time gets accounted to
  * @cputime: the cpu time spent in virtual machine since the last update
  */
-void account_guest_time(struct task_struct *p, u64 cputime)
+void account_guest_time(struct task_struct *p, cputime_t cputime)
 {
 	u64 *cpustat = kcpustat_this_cpu->cpustat;
 
 	/* Add guest time to process. */
-	p->utime += cputime;
-	account_group_user_time(p, cputime);
-	p->gtime += cputime;
+	p->utime += cputime_to_nsecs(cputime);
+	account_group_user_time(p, cputime_to_nsecs(cputime));
+	p->gtime += cputime_to_nsecs(cputime);
 
 	/* Add guest time to cpustat. */
 	if (task_nice(p) > 0) {
-		cpustat[CPUTIME_NICE] += cputime;
-		cpustat[CPUTIME_GUEST_NICE] += cputime;
+		cpustat[CPUTIME_NICE] += (__force u64) cputime;
+		cpustat[CPUTIME_GUEST_NICE] += (__force u64) cputime;
 	} else {
-		cpustat[CPUTIME_USER] += cputime;
-		cpustat[CPUTIME_GUEST] += cputime;
+		cpustat[CPUTIME_USER] += (__force u64) cputime;
+		cpustat[CPUTIME_GUEST] += (__force u64) cputime;
 	}
 }
 
@@ -186,14 +185,14 @@ void account_guest_time(struct task_struct *p, u64 cputime)
  * @index: pointer to cpustat field that has to be updated
  */
 void account_system_index_time(struct task_struct *p,
-			       u64 cputime, enum cpu_usage_stat index)
+			       cputime_t cputime, enum cpu_usage_stat index)
 {
 	/* Add system time to process. */
-	p->stime += cputime;
-	account_group_system_time(p, cputime);
+	p->stime += cputime_to_nsecs(cputime);
+	account_group_system_time(p, cputime_to_nsecs(cputime));
 
 	/* Add system time to cpustat. */
-	task_group_account_field(p, index, cputime);
+	task_group_account_field(p, index, (__force u64) cputime);
 
 	/* Account for system time used */
 	acct_account_cputime(p);
@@ -208,7 +207,8 @@ void account_system_index_time(struct task_struct *p,
  * @hardirq_offset: the offset to subtract from hardirq_count()
  * @cputime: the cpu time spent in kernel space since the last update
  */
-void account_system_time(struct task_struct *p, int hardirq_offset, u64 cputime)
+void account_system_time(struct task_struct *p, int hardirq_offset,
+			 cputime_t cputime)
 {
 	int index;
 
@@ -412,15 +412,16 @@ static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
 		 * So, we have to handle it separately here.
 		 * Also, p->stime needs to be updated for ksoftirqd.
 		 */
-		account_system_index_time(p, cputime, CPUTIME_SOFTIRQ);
+		account_system_index_time(p, old_cputime, CPUTIME_SOFTIRQ);
 	} else if (user_tick) {
 		account_user_time(p, cputime);
 	} else if (p == rq->idle) {
 		account_idle_time(cputime);
 	} else if (p->flags & PF_VCPU) { /* System time or guest time */
-		account_guest_time(p, cputime);
+
+		account_guest_time(p, old_cputime);
 	} else {
-		account_system_index_time(p, cputime, CPUTIME_SYSTEM);
+		account_system_index_time(p, old_cputime, CPUTIME_SYSTEM);
 	}
 }
 
@@ -525,7 +526,7 @@ void account_process_tick(struct task_struct *p, int user_tick)
 	if (user_tick)
 		account_user_time(p, cputime);
 	else if ((p != rq->idle) || (irq_count() != HARDIRQ_OFFSET))
-		account_system_time(p, HARDIRQ_OFFSET, cputime);
+		account_system_time(p, HARDIRQ_OFFSET, old_cputime);
 	else
 		account_idle_time(cputime);
 }
@@ -755,7 +756,7 @@ static void __vtime_account_system(struct task_struct *tsk)
 {
 	cputime_t delta_cpu = get_vtime_delta(tsk);
 
-	account_system_time(tsk, irq_count(), cputime_to_nsecs(delta_cpu));
+	account_system_time(tsk, irq_count(), delta_cpu);
 }
 
 void vtime_account_system(struct task_struct *tsk)
