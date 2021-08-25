@@ -111,9 +111,8 @@ fw-shipped-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FORCE) += synaptics_jdi_3331_sagit
 endif
 ifdef CONFIG_MACH_CHIRON
 fw-shipped-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FORCE) += synaptics_jdi_3330_chiron.fw
-endif
-
 fw-shipped-$(CONFIG_TOUCHSCREEN_FT5X46) += ft8716_ebbg_incell_ebbg_chiron.fw
+endif
 
 ifdef CONFIG_FIRMWARE_IN_KERNEL
 fw-shipped-$(CONFIG_USB_SERIAL_KEYSPAN_MPR) += keyspan/mpr.fw
