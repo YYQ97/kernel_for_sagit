@@ -87,7 +87,7 @@
 #define SCHED_FEAT_ENERGY_AWARE 0
 #endif
 
-SCHED_FEAT(HISI_FILTER, true)
+#define SCHED_FEAT_HISI_FILTER 1
 
 /*
  * Minimum capacity capping. Keep track of minimum capacity factor when
