@@ -646,7 +646,7 @@ endif
 ifeq ($(cc-name),clang)
 ifeq ($(ld-name),lld)
 KBUILD_CFLAGS	+= -fuse-ld=lld
-LDFLAGS		+= -O2
+LDFLAGS		+= -O3
 endif
 KBUILD_CPPFLAGS	+= -Qunused-arguments
 endif
@@ -673,12 +673,12 @@ KBUILD_CFLAGS	+= -O2
 endif
 
 ifeq ($(cc-name),gcc)
-KBUILD_CFLAGS	+= -mcpu=cortex-a73.cortex-a53
-KBUILD_AFLAGS	+= -mcpu=cortex-a73.cortex-a53
+KBUILD_CFLAGS	+= -mcpu=cortex-a73.cortex-a53 -march=armv8-a+crc+crypto
+KBUILD_AFLAGS	+= -mcpu=cortex-a73.cortex-a53 -march=armv8-a+crc+crypto
 endif
 ifeq ($(cc-name),clang)
-KBUILD_CFLAGS	+= -mcpu=cortex-a53
-KBUILD_AFLAGS	+= -mcpu=cortex-a53
+KBUILD_CFLAGS	+= -mcpu=cortex-a53 -mtune=cortex-a53 -funsafe-math-optimizations -ffast-math -fopenmp -march=armv8-a+crc+crypto -mfpu=crypto-neon-fp-armv8 -mfloat-abi=hard
+KBUILD_AFLAGS	+= -mcpu=cortex-a53 -mtune=cortex-a53 -funsafe-math-optimizations -ffast-math -fopenmp -march=armv8-a+crc+crypto -mfpu=crypto-neon-fp-armv8 -mfloat-abi=hard
 endif
 
 KBUILD_CFLAGS	+= $(call cc-option,-fno-delete-null-pointer-checks,)
