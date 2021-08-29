@@ -19,8 +19,6 @@ ldflags-y := -shared -nostdlib -soname=linux-vdso.so.1 \
 		--hash-style=sysv --build-id -n -T
 ccflags-y += $(call cc-option, -fno-whole-program)
 
-ccflags-y += $(DISABLE_LTO)
-
 # Force -O2 to avoid libgcc dependencies
 CFLAGS_REMOVE_vgettimeofday.o = -pg -Os
 CFLAGS_vgettimeofday.o = -O3 -fPIC -fasynchronous-unwind-tables
