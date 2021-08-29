@@ -12,7 +12,6 @@
 #include <linux/kthread.h>
 #include "srandom.h"
 
-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 #define DRIVER_AUTHOR "Jonathan Senkerik <josenk@jintegrate.co>"
 #define DRIVER_DESC   "Improved random number generator."
 #define arr_RND_SIZE 67             /* Size of Array.  Must be >= 64. (actual size used will be 64, anything greater is thrown away). Recommended prime.*/
