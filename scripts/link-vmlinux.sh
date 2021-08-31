@@ -59,38 +59,6 @@ archive_builtin()
 	${AR} rcsTP${KBUILD_ARFLAGS} built-in.a			\
 				${KBUILD_VMLINUX_INIT}		\
 				${KBUILD_VMLINUX_MAIN}
-
-	# rebuild with llvm-ar to update the symbol table
-	if [ -n "${CONFIG_LTO_CLANG}" ]; then
-		mv -f built-in.a built-in.a.tmp
-		${LLVM_AR} rcsT${KBUILD_ARFLAGS} built-in.a $(${AR} t built-in.a.tmp)
-		rm -f built-in.a.tmp
-	fi
-}
-
-# If CONFIG_LTO_CLANG is selected, collect generated symbol versions into
-# .tmp_symversions
-modversions()
-{
-	if [ -z "${CONFIG_LTO_CLANG}" ]; then
-		return
-	fi
-
-	if [ -z "${CONFIG_MODVERSIONS}" ]; then
-		return
-	fi
-
-	rm -f .tmp_symversions
-
-	for a in built-in.a ${KBUILD_VMLINUX_LIBS}; do
-		for o in $(${AR} t $a); do
-			if [ -f ${o}.symversions ]; then
-				cat ${o}.symversions >> .tmp_symversions
-			fi
-		done
-	done
-
-	echo "-T .tmp_symversions"
 }
 
 # Link of vmlinux.o used for section mismatch analysis
@@ -106,13 +74,7 @@ modpost_link()
 		${KBUILD_VMLINUX_LIBS}				\
 		--end-group"
 
-	if [ -n "${CONFIG_LTO_CLANG}" ]; then
-		# This might take a while, so indicate that we're doing
-		# an LTO link
-		info LTO vmlinux.o
-	fi
-
-	${LD} ${LDFLAGS} -r -o ${1} $(modversions) ${objects}
+	${LD} ${LDFLAGS} -r -o ${1} ${objects}
 }
 
 # Link of vmlinux
@@ -124,20 +86,13 @@ vmlinux_link()
 	local objects
 
 	if [ "${SRCARCH}" != "um" ]; then
-		if [ -z "${CONFIG_LTO_CLANG}" ]; then
-			objects="--whole-archive		\
-				built-in.a			\
-				--no-whole-archive		\
-				--start-group			\
-				${KBUILD_VMLINUX_LIBS}		\
-				--end-group			\
-				${1}"
-		else
-			objects="--start-group			\
-				vmlinux.o			\
-				--end-group			\
-				${1}"
-		fi
+		objects="--whole-archive			\
+			built-in.a				\
+			--no-whole-archive			\
+			--start-group				\
+			${KBUILD_VMLINUX_LIBS}			\
+			--end-group				\
+			${1}"
 
 		${LD} ${LDFLAGS} ${LDFLAGS_vmlinux} -o ${2}	\
 			-T ${lds} ${objects}
@@ -157,6 +112,7 @@ vmlinux_link()
 		rm -f linux
 	fi
 }
+
 
 # Create ${2} .o file with all symbols from the ${1} object file
 kallsyms()
@@ -206,7 +162,6 @@ cleanup()
 	rm -f .old_version
 	rm -f .tmp_System.map
 	rm -f .tmp_kallsyms*
-	rm -f .tmp_symversions
 	rm -f .tmp_version
 	rm -f .tmp_vmlinux*
 	rm -f built-in.a
@@ -269,6 +224,7 @@ ${MAKE} -f "${srctree}/scripts/Makefile.build" obj=init
 archive_builtin
 
 #link vmlinux.o
+info LD vmlinux.o
 modpost_link vmlinux.o
 
 # modpost vmlinux.o to check for section mismatches
