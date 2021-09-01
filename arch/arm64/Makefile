@@ -16,7 +16,7 @@ OBJCOPYFLAGS	:=-O binary -R .note -R .note.gnu.build-id -R .comment -S
 GZFLAGS		:=-9
 
 ifneq ($(CONFIG_RELOCATABLE),)
-LDFLAGS_vmlinux		+= -pie -shared -Bsymbolic
+LDFLAGS_vmlinux		+= -pie -Bsymbolic
 endif
 KBUILD_CFLAGS += $(call cc-option,-mno-fix-cortex-a53-843419)
 
