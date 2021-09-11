@@ -640,8 +640,6 @@ config QTI_SDIO_CLIENT
 	help
 	  Interface used for SDIO and sahara user spce application
 
-source "drivers/char/srandom/Kconfig"
-
 endmenu
 
 config RANDOM_TRUST_CPU
