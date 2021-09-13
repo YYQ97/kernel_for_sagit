@@ -1,19 +1,17 @@
-/* SPDX-License-Identifier: GPL-2.0
+/*
+ * include/linux/display_state.h
  *
- * Copyright (C) 2019 Danny Lin <danny@kdrag0n.dev>.
- * Copyright (C) 2019 Brian Dashore (kingbri) <bdashore3@gmail.com>
+ * Copyright (c) 2016 Francisco Franco
+ * franciscofranco.1990@gmail.com
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
  */
 
-#ifndef _DISPLAY_STATE_H_
-#define _DISPLAY_STATE_H_
+#ifndef _LINUX_DISPLAY_STATE_H
+#define _LINUX_DISPLAY_STATE_H
 
-#ifdef CONFIG_FB_MSM_MDSS
 bool is_display_on(void);
-#else
-static inline bool is_display_on(void)
-{
-	return true;
-}
-#endif
 
-#endif /* _DISPLAY_STATE_H_ */
+#endif
