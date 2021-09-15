@@ -655,7 +655,7 @@ static void wcd_mbhc_report_plug(struct wcd_mbhc *mbhc, int insertion,
 
 		mbhc->hph_type = WCD_MBHC_HPH_NONE;
 		mbhc->zl = mbhc->zr = 0;
-		pr_info("%s: Reporting removal %d(%x)\n", __func__,
+		pr_debug("%s: Reporting removal %d(%x)\n", __func__,
 			 jack_type, mbhc->hph_status);
 		wcd_mbhc_jack_report(mbhc, &mbhc->headset_jack,
 				mbhc->hph_status, WCD_MBHC_JACK_MASK);
@@ -2329,8 +2329,8 @@ static int wcd_mbhc_initialise(struct wcd_mbhc *mbhc)
 		WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_INSREM_DBNC, 4);
 #ifndef CONFIG_MACH_XIAOMI_MSM8998
 	} else {
-		/* Insertion debounce set to 512ms */
-		WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_INSREM_DBNC, 0x0B);
+		/* Insertion debounce set to 96ms */
+		WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_INSREM_DBNC, 6);
 	}
 #endif
 
