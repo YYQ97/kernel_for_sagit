@@ -1,4 +1,5 @@
 /* Copyright (c) 2016-2017, 2020, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2019 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -389,6 +390,22 @@ struct fg_saved_data {
 	unsigned long last_req_expires;
 };
 
+#define BATT_MA_AVG_SAMPLES		8
+struct batt_params {
+	bool		update_now;
+	int		batt_raw_soc;
+	int		batt_soc;
+	int		samples_num;
+	int		samples_index;
+	int		batt_ma_avg_samples[BATT_MA_AVG_SAMPLES];
+	int		batt_ma_avg;
+	int		batt_ma_prev;
+	int		batt_ma;
+	int		batt_mv;
+	int		batt_temp;
+	struct timespec		last_soc_change_time;
+};
+
 struct fg_chip {
 	struct device		*dev;
 	struct pmic_revid_data	*pmic_rev_id;
@@ -457,14 +474,18 @@ struct fg_chip {
 	bool			esr_flt_cold_temp_en;
 	bool			slope_limit_en;
 	bool			use_ima_single_mode;
+	bool			report_full;
 	bool			qnovo_enable;
 	bool			suspended;
+	struct batt_params	param;
+	struct delayed_work	soc_monitor_work;
 	struct completion	soc_update;
 	struct completion	soc_ready;
 	struct delayed_work	profile_load_work;
 	struct work_struct	status_change_work;
 	struct delayed_work	ttf_work;
 	struct delayed_work	sram_dump_work;
+	struct delayed_work     soc_work;
 	struct work_struct	esr_filter_work;
 	struct alarm		esr_filter_alarm;
 	ktime_t			last_delta_temp_time;
