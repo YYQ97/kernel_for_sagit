@@ -2,7 +2,7 @@
  * Synaptics DSX touchscreen driver
  *
  * Copyright (C) 2012-2015 Synaptics Incorporated. All rights reserved.
- * Copyright (C) 2017 XiaoMi, Inc.
+ * Copyright (C) 2019 XiaoMi, Inc.
  *
  * Copyright (C) 2012 Alexandra Chin <alexandra.chin@tw.synaptics.com>
  * Copyright (C) 2012 Scott Lin <scott.lin@tw.synaptics.com>
@@ -184,6 +184,9 @@ struct synaptics_dsx_board_data {
 	unsigned int reset_active_ms;
 	unsigned int byte_delay_us;
 	unsigned int block_delay_us;
+	unsigned int palm_rx_channel;
+	unsigned int palm_rx_area;
+	unsigned int palm_tx_disable;
 	bool cut_off_power;
 	bool power_ctrl;
 	bool panel_is_incell;

@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2012 Alexandra Chin <alexandra.chin@tw.synaptics.com>
  * Copyright (C) 2012 Scott Lin <scott.lin@tw.synaptics.com>
- * Copyright (C) 2018 XiaoMi, Inc.
+ * Copyright (C) 2019 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -172,6 +172,27 @@ static int parse_dt(struct device *dev, struct synaptics_dsx_board_data *bdata)
 			bdata->power_on_state = value;
 	} else
 		bdata->power_gpio = -1;
+
+	retval = of_property_read_u32(np, "synaptics,palm-rx-channel",
+			&value);
+	if (retval < 0)
+		bdata->palm_rx_channel = 0;
+	else
+		bdata->palm_rx_channel = value;
+
+	retval = of_property_read_u32(np, "synaptics,palm-rx-area",
+			&value);
+	if (retval < 0)
+		bdata->palm_rx_area = 0;
+	else
+		bdata->palm_rx_area = value;
+
+	retval = of_property_read_u32(np, "synaptics,palm-tx-disable",
+			&value);
+	if (retval < 0)
+		bdata->palm_tx_disable = 0;
+	else
+		bdata->palm_tx_disable = value;
 
 	retval = of_property_read_u32(np, "synaptics,power-delay-ms",
 			&value);

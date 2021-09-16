@@ -17,4 +17,10 @@
 	    reg = <0x786134 0x4>;
 	    reg-names = "sn-base";
 	};
+	
+	xiaomi_touch {
+		compatible = "xiaomi-touch";
+		status = "ok";
+		touch,name = "xiaomi-touch";
+	};
 };

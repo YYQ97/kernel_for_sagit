@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2012 Alexandra Chin <alexandra.chin@tw.synaptics.com>
  * Copyright (C) 2012 Scott Lin <scott.lin@tw.synaptics.com>
- * Copyright (C) 2018 XiaoMi, Inc.
+ * Copyright (C) 2019 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -386,6 +386,11 @@ struct synaptics_rmi4_data {
 	int force_max;
 	int chip_id;
 	int touchs;
+	unsigned int palm_tx_grip_disable;
+	unsigned int palm_tx_area_threshold;
+	unsigned int palm_tx_channel_threshold;
+	unsigned int palm_rx_area_threshold;
+	unsigned int palm_rx_channel_threshold;
 	bool flash_prog_mode;
 	bool irq_enabled;
 	bool fingers_on_2d;
@@ -403,14 +408,10 @@ struct synaptics_rmi4_data {
 	bool external_afe_buttons;
 	bool fw_updating;
 	bool wakeup_en;
+	bool palm_enabled;
 	bool chip_is_tddi;
 	bool open_test_b7;
 	bool short_test_extend;
-
-#ifdef CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_TEST_REPORTING_FORCE
-	bool disable_data_dump;
-	bool dump_flags;
-#endif
 	bool enable_reversed_keys;
 
 	int (*reset_device)(struct synaptics_rmi4_data *rmi4_data,
@@ -425,12 +426,8 @@ struct synaptics_rmi4_data {
 	struct pinctrl_state *pinctrl_state_active;
 	struct pinctrl_state *pinctrl_state_suspend;
 	struct synaptics_dsx_factory_param *factory_param;
-
 	struct pm_qos_request pm_qos_req;
 
-#ifdef CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_TEST_REPORTING_FORCE
-	struct completion dump_completion;
-#endif
 #ifdef CONFIG_TOUCH_DEBUG_FS
 	struct dentry *debugfs;
 #endif
@@ -445,6 +442,7 @@ struct synaptics_rmi4_data {
 	struct clk *iface_clk;
 #endif
 
+	bool palm_sensor_changed;
 	struct proc_dir_entry *input_proc;
 };
 

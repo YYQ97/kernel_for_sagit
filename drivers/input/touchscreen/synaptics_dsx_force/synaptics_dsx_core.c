@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2012 Alexandra Chin <alexandra.chin@tw.synaptics.com>
  * Copyright (C) 2012 Scott Lin <scott.lin@tw.synaptics.com>
- * Copyright (C) 2018 XiaoMi, Inc.
+ * Copyright (C) 2019 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,6 +44,11 @@
 #include <linux/regulator/consumer.h>
 #include <linux/input/synaptics_dsx.h>
 #include "synaptics_dsx_core.h"
+
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
+#include <../xiaomi/xiaomi_touch.h>
+#endif
+
 #ifdef KERNEL_ABOVE_2_6_38
 #include <linux/input/mt.h>
 #endif
@@ -78,7 +83,6 @@
 #define REPORT_2D_W
 
 #define REPORT_2D_PRESSURE
-
 
 #define F12_DATA_15_WORKAROUND
 
@@ -134,6 +138,17 @@
 
 #define DOUBLE_TAP	0x01
 #define HOMEKEY_WAKEUP	0x80
+#define F51_CUSTOM_PALM_CTL 0x063B
+#define F12_2D_CTRL23  0x001A
+#define F51_CUSTOM_CTRL109 0x063B
+#define F51_CUSTOM_CTRL110 0x063C
+#define F51_CUSTOM_CTRL111 0x063D
+#define F51_CUSTOM_CTRL112 0x063E
+#define F51_CUSTOM_CTRL113 0x063F
+#define F51_CUSTOM_CTRL114 0x0640
+#define F51_CUSTOM_CTRL115 0x0641
+
+#define F54_FORCE_UPDATE 0x169
 
 #define INPUT_EVENT_START			0
 #define INPUT_EVENT_SENSITIVE_MODE_OFF		0
@@ -253,6 +268,49 @@ static ssize_t synaptics_rmi4_panel_vendor_show(struct device *dev,
 
 static ssize_t synaptics_rmi4_virtual_key_map_show(struct kobject *kobj,
 		struct kobj_attribute *attr, char *buf);
+
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE_SENSOR
+static int synaptics_rmi4_palm_enable(struct synaptics_rmi4_data *rmi4_data,
+		int on);
+
+static ssize_t synaptics_rmi4_palm_enable_show(struct device *dev,
+		struct device_attribute *attr, char *buf);
+
+static ssize_t synaptics_rmi4_palm_enable_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count);
+
+static ssize_t synaptics_rmi4_palm_tx_grip_disable_show(struct device *dev,
+		struct device_attribute *attr, char *buf);
+
+static ssize_t synaptics_rmi4_palm_tx_grip_disable_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count);
+
+static ssize_t synaptics_rmi4_palm_tx_area_threshold_show(struct device *dev,
+		struct device_attribute *attr, char *buf);
+
+static ssize_t synaptics_rmi4_palm_tx_area_threshold_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count);
+
+static ssize_t synaptics_rmi4_palm_tx_channel_threshold_show(struct device *dev,
+		struct device_attribute *attr, char *buf);
+
+static ssize_t synaptics_rmi4_palm_tx_channel_threshold_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count);
+
+static ssize_t synaptics_rmi4_palm_rx_area_threshold_show(struct device *dev,
+		struct device_attribute *attr, char *buf);
+
+static ssize_t synaptics_rmi4_palm_rx_area_threshold_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count);
+
+static ssize_t synaptics_rmi4_palm_rx_channel_threshold_show(struct device *dev,
+		struct device_attribute *attr, char *buf);
+
+static ssize_t synaptics_rmi4_palm_rx_channel_threshold_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count);
+
+static int synaptics_rmi4_palm_enable(struct synaptics_rmi4_data *rmi4_data, int on);
+#endif
 
 struct synaptics_rmi4_f01_device_status {
 	union {
@@ -783,6 +841,26 @@ static struct device_attribute attrs[] = {
 	__ATTR(reversed_keys_enable, (S_IRUGO | S_IWUSR),
 			synaptics_rmi4_reversed_keys_show,
 			synaptics_rmi4_reversed_keys_store),
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE_SENSOR
+	__ATTR(palm_enable, (S_IRUGO | S_IWUSR),
+			synaptics_rmi4_palm_enable_show,
+			synaptics_rmi4_palm_enable_store),
+	__ATTR(palm_rx_area, (S_IRUGO | S_IWUSR),
+			synaptics_rmi4_palm_rx_area_threshold_show,
+			synaptics_rmi4_palm_rx_area_threshold_store),
+	__ATTR(tx_grip_disable, (S_IRUGO | S_IWUSR),
+			synaptics_rmi4_palm_tx_grip_disable_show,
+			synaptics_rmi4_palm_tx_grip_disable_store),
+	__ATTR(palm_rx_channel, (S_IRUGO | S_IWUSR),
+		synaptics_rmi4_palm_rx_channel_threshold_show,
+		synaptics_rmi4_palm_rx_channel_threshold_store),
+	__ATTR(palm_tx_area, (S_IRUGO | S_IWUSR),
+			synaptics_rmi4_palm_tx_area_threshold_show,
+			synaptics_rmi4_palm_tx_area_threshold_store),
+	__ATTR(palm_tx_channel, (S_IRUGO | S_IWUSR),
+		synaptics_rmi4_palm_tx_channel_threshold_show,
+		synaptics_rmi4_palm_tx_channel_threshold_store),
+#endif
 };
 
 bool capacitive_keys_enabled;
@@ -1263,6 +1341,356 @@ static ssize_t synaptics_rmi4_reversed_keys_store(struct device *dev,
 	return count;
 }
 
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
+static struct xiaomi_touch_interface xiaomi_touch_interfaces;
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE_SENSOR
+static int synaptics_rmi4_palm_enable(struct synaptics_rmi4_data *rmi4_data, int on)
+{
+	int retval;
+	unsigned char enable;
+	unsigned char forceupdate = 0x4;
+	unsigned char temp = 0;
+	unsigned char input[2];
+
+	enable = on > 0 ? 1 : 0;
+
+	retval = synaptics_rmi4_reg_read(rmi4_data, F12_2D_CTRL23,
+					&temp, sizeof(temp));
+	if (retval < 0)
+		return -EINVAL;
+
+	if (enable)
+		temp = temp | 0x04;
+	else
+		temp = temp & (~0x04);
+
+	retval = synaptics_rmi4_reg_write(rmi4_data, F12_2D_CTRL23,
+				&temp, sizeof(temp));
+	if (retval < 0)
+		return -EINVAL;
+
+	retval = synaptics_rmi4_reg_write(rmi4_data, F51_CUSTOM_CTRL109,
+				&enable, sizeof(enable));
+	if (retval < 0)
+		return -EINVAL;
+
+	if (!enable)
+		goto out;
+
+#if 1
+	if (rmi4_data->palm_rx_area_threshold) {
+		input[1] = (unsigned char)((rmi4_data->palm_rx_area_threshold >> 8) & 0xff);
+		input[0] = (unsigned char)(rmi4_data->palm_rx_area_threshold & 0xff);
+		retval = synaptics_rmi4_reg_write(rmi4_data, F51_CUSTOM_CTRL110,
+						&input[1], sizeof(input[1]));
+		if (retval < 0)
+			return -EINVAL;
+
+		retval = synaptics_rmi4_reg_write(rmi4_data, F51_CUSTOM_CTRL111,
+						&input[0], sizeof(input[0]));
+		if (retval < 0)
+			return -EINVAL;
+
+	}
+
+	if (rmi4_data->palm_rx_channel_threshold) {
+		temp = (unsigned char)rmi4_data->palm_rx_channel_threshold;
+		retval = synaptics_rmi4_reg_write(rmi4_data, F51_CUSTOM_CTRL112,
+						&temp, sizeof(temp));
+		if (retval < 0)
+			return -EINVAL;
+	}
+
+	if (rmi4_data->palm_tx_grip_disable) {
+		temp = (unsigned char)rmi4_data->palm_tx_grip_disable;
+		retval = synaptics_rmi4_reg_write(rmi4_data, F51_CUSTOM_CTRL113,
+						&temp, sizeof(temp));
+		if (retval < 0)
+			return -EINVAL;
+	}
+#endif
+out:
+	retval = synaptics_rmi4_reg_write(rmi4_data, F54_FORCE_UPDATE,
+				&forceupdate, sizeof(forceupdate));
+	if (retval < 0)
+		return -EINVAL;
+	return 0;
+}
+
+static int synaptics_rmi4_palmsensor_enable(int on)
+{
+	struct synaptics_rmi4_data *rmi4_data = exp_data.rmi4_data;
+	int ret = 0;
+
+	if (!rmi4_data)
+		return -EINVAL;
+	rmi4_data->palm_enabled = on;
+	if (rmi4_data->suspend) {
+		dev_err(rmi4_data->pdev->dev.parent, "%s: tp has suspend\n", __func__);
+		rmi4_data->palm_sensor_changed = false;
+		return 0;
+	}
+	ret = synaptics_rmi4_palm_enable(rmi4_data, on);
+	if (!ret)
+		rmi4_data->palm_sensor_changed = true;
+	return ret;
+}
+
+static ssize_t synaptics_rmi4_palm_enable_show(struct device *dev,
+struct device_attribute *attr, char *buf)
+{
+	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
+	return snprintf(buf, PAGE_SIZE, "%u\n", rmi4_data->palm_enabled);
+}
+
+static ssize_t synaptics_rmi4_palm_enable_store(struct device *dev,
+struct device_attribute *attr, const char *buf, size_t count)
+{
+	unsigned int input;
+	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
+
+	if (sscanf(buf, "%d", &input) != 1 || rmi4_data->suspend)
+			return -EINVAL;
+
+	synaptics_rmi4_palm_enable(rmi4_data, !!input);
+
+	return count;
+}
+
+static ssize_t synaptics_rmi4_palm_rx_area_threshold_show(struct device *dev,
+struct device_attribute *attr, char *buf)
+{
+	int retval;
+	unsigned char input[2];
+
+	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
+
+	retval = synaptics_rmi4_reg_read(rmi4_data, F51_CUSTOM_CTRL110,
+					&input[1], sizeof(input[1]));
+	if (retval < 0)
+		return -EINVAL;
+
+	retval = synaptics_rmi4_reg_read(rmi4_data, F51_CUSTOM_CTRL111,
+					&input[0], sizeof(input[0]));
+	if (retval < 0)
+		return -EINVAL;
+	printk("%s input0:%d, input1:%d\n", __func__, input[0], input[1]);
+	return snprintf(buf, PAGE_SIZE, "%d\n", input[1] << 8 | input[0]);
+}
+
+static ssize_t synaptics_rmi4_palm_rx_area_threshold_store(struct device *dev,
+struct device_attribute *attr, const char *buf, size_t count)
+{
+	unsigned int input;
+	int retval;
+	unsigned char forceupdate = 0x4;
+	unsigned char enable[2];
+	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
+
+	if (sscanf(buf, "%d", &input) != 1 || rmi4_data->suspend)
+			return -EINVAL;
+
+	enable[1] = (unsigned char)((input >> 8) & 0xff);
+	enable[0] = (unsigned char)(input & 0xff);
+	retval = synaptics_rmi4_reg_write(rmi4_data, F51_CUSTOM_CTRL110,
+					&enable[1], sizeof(enable[1]));
+	if (retval < 0)
+		return -EINVAL;
+
+	retval = synaptics_rmi4_reg_write(rmi4_data, F51_CUSTOM_CTRL111,
+					&enable[0], sizeof(enable[0]));
+	if (retval < 0)
+		return -EINVAL;
+
+	retval = synaptics_rmi4_reg_write(rmi4_data, F54_FORCE_UPDATE,
+				&forceupdate, sizeof(forceupdate));
+	if (retval < 0)
+		return -EINVAL;
+	printk("%s input0:%d, input1:%d\n", __func__, enable[0], enable[1]);
+
+	rmi4_data->palm_rx_area_threshold = input;
+
+	return count;
+}
+
+static ssize_t synaptics_rmi4_palm_rx_channel_threshold_show(struct device *dev,
+struct device_attribute *attr, char *buf)
+{
+	int retval;
+	unsigned char input;
+
+	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
+
+	retval = synaptics_rmi4_reg_read(rmi4_data, F51_CUSTOM_CTRL112,
+					&input, sizeof(input));
+	if (retval < 0)
+		return -EINVAL;
+
+	return snprintf(buf, PAGE_SIZE, "%d\n", input);
+}
+
+static ssize_t synaptics_rmi4_palm_rx_channel_threshold_store(struct device *dev,
+struct device_attribute *attr, const char *buf, size_t count)
+{
+	unsigned int input;
+	int retval;
+	unsigned char forceupdate = 0x4;
+	unsigned char enable;
+	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
+
+	if (sscanf(buf, "%d", &input) != 1 || rmi4_data->suspend)
+			return -EINVAL;
+
+	enable = (unsigned char)input;
+	retval = synaptics_rmi4_reg_write(rmi4_data, F51_CUSTOM_CTRL112,
+					&enable, sizeof(enable));
+	if (retval < 0)
+		return -EINVAL;
+
+	retval = synaptics_rmi4_reg_write(rmi4_data, F54_FORCE_UPDATE,
+				&forceupdate, sizeof(forceupdate));
+	if (retval < 0)
+		return -EINVAL;
+
+	rmi4_data->palm_rx_channel_threshold = input;
+
+	return count;
+}
+
+static ssize_t synaptics_rmi4_palm_tx_grip_disable_show(struct device *dev,
+struct device_attribute *attr, char *buf)
+{
+	int retval;
+	unsigned char input;
+
+	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
+
+	retval = synaptics_rmi4_reg_read(rmi4_data, F51_CUSTOM_CTRL113,
+					&input, sizeof(input));
+	if (retval < 0)
+		return -EINVAL;
+
+	return snprintf(buf, PAGE_SIZE, "%d\n", input);
+}
+
+static ssize_t synaptics_rmi4_palm_tx_grip_disable_store(struct device *dev,
+struct device_attribute *attr, const char *buf, size_t count)
+{
+	unsigned int input;
+	int retval;
+	unsigned char forceupdate = 0x4;
+	unsigned char enable;
+	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
+
+	if (sscanf(buf, "%d", &input) != 1 || rmi4_data->suspend)
+			return -EINVAL;
+
+	enable = (unsigned char)input;
+	retval = synaptics_rmi4_reg_write(rmi4_data, F51_CUSTOM_CTRL113,
+					&enable, sizeof(enable));
+	if (retval < 0)
+		return -EINVAL;
+
+	retval = synaptics_rmi4_reg_write(rmi4_data, F54_FORCE_UPDATE,
+				&forceupdate, sizeof(forceupdate));
+	if (retval < 0)
+		return -EINVAL;
+
+	rmi4_data->palm_tx_grip_disable = input;
+
+	return count;
+}
+
+static ssize_t synaptics_rmi4_palm_tx_area_threshold_show(struct device *dev,
+struct device_attribute *attr, char *buf)
+{
+	int retval;
+	unsigned char input;
+
+	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
+
+	retval = synaptics_rmi4_reg_read(rmi4_data, F51_CUSTOM_CTRL114,
+					&input, sizeof(input));
+	if (retval < 0)
+		return -EINVAL;
+
+	return snprintf(buf, PAGE_SIZE, "%d\n", input);
+}
+
+static ssize_t synaptics_rmi4_palm_tx_area_threshold_store(struct device *dev,
+struct device_attribute *attr, const char *buf, size_t count)
+{
+	unsigned int input;
+	int retval;
+	unsigned char forceupdate = 0x4;
+	unsigned char enable;
+	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
+
+	if (sscanf(buf, "%d", &input) != 1 || rmi4_data->suspend)
+			return -EINVAL;
+
+	enable = (unsigned char)input;
+	retval = synaptics_rmi4_reg_write(rmi4_data, F51_CUSTOM_CTRL114,
+					&enable, sizeof(enable));
+	if (retval < 0)
+		return -EINVAL;
+
+	retval = synaptics_rmi4_reg_write(rmi4_data, F54_FORCE_UPDATE,
+				&forceupdate, sizeof(forceupdate));
+	if (retval < 0)
+		return -EINVAL;
+
+	rmi4_data->palm_tx_area_threshold = input;
+
+	return count;
+}
+
+static ssize_t synaptics_rmi4_palm_tx_channel_threshold_show(struct device *dev,
+struct device_attribute *attr, char *buf)
+{
+	int retval;
+	unsigned char input;
+
+	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
+
+	retval = synaptics_rmi4_reg_read(rmi4_data, F51_CUSTOM_CTRL115,
+					&input, sizeof(input));
+	if (retval < 0)
+		return -EINVAL;
+
+	return snprintf(buf, PAGE_SIZE, "%d\n", input);
+}
+
+static ssize_t synaptics_rmi4_palm_tx_channel_threshold_store(struct device *dev,
+struct device_attribute *attr, const char *buf, size_t count)
+{
+	unsigned int input;
+	int retval;
+	unsigned char forceupdate = 0x4;
+	unsigned char enable;
+	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
+
+	if (sscanf(buf, "%d", &input) != 1 || rmi4_data->suspend)
+			return -EINVAL;
+
+	enable = (unsigned char)input;
+	retval = synaptics_rmi4_reg_write(rmi4_data, F51_CUSTOM_CTRL115,
+					&enable, sizeof(enable));
+	if (retval < 0)
+		return -EINVAL;
+
+	retval = synaptics_rmi4_reg_write(rmi4_data, F54_FORCE_UPDATE,
+				&forceupdate, sizeof(forceupdate));
+	if (retval < 0)
+		return -EINVAL;
+
+	rmi4_data->palm_tx_channel_threshold = input;
+
+	return count;
+}
+#endif
+#endif
+
 static ssize_t synaptics_rmi4_panel_color_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
@@ -1719,13 +2147,12 @@ static int synaptics_rmi4_f12_abs_report(struct synaptics_rmi4_data *rmi4_data,
 			break;
 		case F12_PALM_STATUS:
 			dev_dbg(rmi4_data->pdev->dev.parent,
-					"%s: Finger %d: "
-					"x = %d, "
-					"y = %d, "
-					"wx = %d, "
-					"wy = %d\n",
-					__func__, finger,
-					x, y, wx, wy);
+					"%s: palm event,palm_enabled:%u",
+					__func__, rmi4_data->palm_enabled);
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE_SENSOR
+			if (rmi4_data->palm_enabled)
+				update_palm_sensor_value(1);
+#endif
 			break;
 		case F12_STYLUS_STATUS:
 		case F12_ERASER_STATUS:
@@ -4451,6 +4878,11 @@ static int synaptics_rmi4_free_fingers(struct synaptics_rmi4_data *rmi4_data)
 			input_sync(rmi4_data->input_dev);
 		}
 
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE_SENSOR
+	if (rmi4_data->palm_enabled)
+		update_palm_sensor_value(0);
+#endif
+
 	rmi4_data->touchs = 0;
 
 	mutex_unlock(&(rmi4_data->rmi4_report_mutex));
@@ -5033,10 +5465,6 @@ static int synaptics_rmi4_probe(struct platform_device *pdev)
 	mutex_init(&(rmi4_data->rmi4_irq_enable_mutex));
 	mutex_init(&(rmi4_data->rmi4_cover_mutex));
 
-#ifdef CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_TEST_REPORTING_FORCE
-	init_completion(&rmi4_data->dump_completion);
-#endif
-
 	platform_set_drvdata(pdev, rmi4_data);
 
 	vir_button_map = bdata->vir_button_map;
@@ -5243,8 +5671,19 @@ static int synaptics_rmi4_probe(struct platform_device *pdev)
 	synaptics_secure_touch_init(rmi4_data);
 	synaptics_secure_touch_stop(rmi4_data, 1);
 
-	return retval;
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
+	xiaomitouch_register_modedata(&xiaomi_touch_interfaces);
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE_SENSOR
+	rmi4_data->palm_tx_grip_disable = bdata->palm_tx_disable;
+	rmi4_data->palm_rx_area_threshold = bdata->palm_rx_area;
+	rmi4_data->palm_rx_channel_threshold = bdata->palm_rx_channel;
+	memset(&xiaomi_touch_interfaces, 0x00, sizeof(struct xiaomi_touch_interface));
+	xiaomi_touch_interfaces.palm_sensor_write = synaptics_rmi4_palmsensor_enable;
+	xiaomitouch_register_modedata(&xiaomi_touch_interfaces);
+#endif
+#endif
 
+	return retval;
 
 err_sysfs_panel_vendor:
 #if defined(CONFIG_SECURE_TOUCH)
@@ -5645,20 +6084,10 @@ static int synaptics_rmi4_fb_notifier_cb(struct notifier_block *self,
 					rmi4_data->wakeup_en = false;
 				}
 
-#ifdef CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_TEST_REPORTING_FORCE
-				rmi4_data->disable_data_dump = false;
-#endif
 			}
 		} else if (event == FB_EARLY_EVENT_BLANK) {
 			transition = evdata->data;
 			if ((*transition == FB_BLANK_POWERDOWN) || (*transition == FB_BLANK_NORMAL)) {
-#ifdef CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_TEST_REPORTING_FORCE
-				rmi4_data->disable_data_dump = true;
-				if (rmi4_data->dump_flags) {
-					reinit_completion(&rmi4_data->dump_completion);
-					wait_for_completion_timeout(&rmi4_data->dump_completion, 4 * HZ);
-				}
-#endif
 				if (rmi4_data->enable_wakeup_gesture) {
 					rmi4_data->wakeup_en = true;
 					mdss_regulator_ctrl(rmi4_data, DISP_REG_ALL, true);
@@ -5710,9 +6139,6 @@ static int synaptics_rmi4_fb_notifier_cb_tddi(struct notifier_block *self,
 					rmi4_data->fb_ready = true;
 				}
 
-#ifdef CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_TEST_REPORTING_FORCE
-				rmi4_data->disable_data_dump = false;
-#endif
 			} else if ((*transition == FB_BLANK_POWERDOWN) || (*transition == FB_BLANK_NORMAL)) {
 				if (rmi4_data->wakeup_en) {
 					synaptics_rmi4_suspend(&rmi4_data->pdev->dev);
@@ -5728,13 +6154,6 @@ static int synaptics_rmi4_fb_notifier_cb_tddi(struct notifier_block *self,
 					msleep(30);
 				}
 			} else if ((*transition == FB_BLANK_POWERDOWN) || (*transition == FB_BLANK_NORMAL)) {
-#ifdef CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_TEST_REPORTING_FORCE
-				rmi4_data->disable_data_dump = true;
-				if (rmi4_data->dump_flags) {
-					reinit_completion(&rmi4_data->dump_completion);
-					wait_for_completion_timeout(&rmi4_data->dump_completion, 4 * HZ);
-				}
-#endif
 				if (rmi4_data->enable_wakeup_gesture) {
 					rmi4_data->wakeup_en = true;
 					mdss_panel_reset_skip_enable(true);
@@ -5848,6 +6267,14 @@ static int synaptics_rmi4_suspend(struct device *dev)
 
 	if (rmi4_data->stay_awake || rmi4_data->suspend)
 		return 0;
+
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE_SENSOR
+	if (rmi4_data->palm_enabled) {
+		update_palm_sensor_value(0);
+		synaptics_rmi4_palm_enable(rmi4_data, 0);
+		rmi4_data->palm_enabled = false;
+	}
+#endif
 
 	if (bdata->cut_off_power || (rmi4_data->chip_is_tddi && !rmi4_data->wakeup_en)) {
 		if (rmi4_data->fw_updating)
@@ -5966,6 +6393,13 @@ static int synaptics_rmi4_resume(struct device *dev)
 	}
 
 	rmi4_data->suspend = false;
+
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE_SENSOR
+	if (rmi4_data->palm_enabled && !rmi4_data->palm_sensor_changed) {
+		synaptics_rmi4_palm_enable(rmi4_data, 1);
+		rmi4_data->palm_sensor_changed = true;
+	}
+#endif
 
 	if (rmi4_data->enable_cover_mode)
 		cover_mode_set(rmi4_data, rmi4_data->enable_cover_mode);
