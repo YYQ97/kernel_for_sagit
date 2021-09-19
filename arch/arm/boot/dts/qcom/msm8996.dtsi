@@ -1318,8 +1318,6 @@
 
 		/* PM QoS */
 		qcom,pm-qos-cpu-groups = <0x03 0x0C>;
-		qcom,pm-qos-cpu-group-latency-us = <70 70>;
-		qcom,pm-qos-default-cpu = <0>;
 
 		non-removable;
 		status = "disabled";
