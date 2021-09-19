@@ -4756,6 +4756,7 @@ static struct fg_irq_info fg_irqs[FG_IRQ_MAX] = {
 	[MSOC_HIGH_IRQ] = {
 		.name		= "msoc-high",
 		.handler	= fg_soc_irq_handler,
+		.wakeable	= true,
 	},
 	[MSOC_EMPTY_IRQ] = {
 		.name		= "msoc-empty",
@@ -4765,10 +4766,12 @@ static struct fg_irq_info fg_irqs[FG_IRQ_MAX] = {
 	[MSOC_LOW_IRQ] = {
 		.name		= "msoc-low",
 		.handler	= fg_soc_irq_handler,
+		.wakeable	= true,
 	},
 	[MSOC_DELTA_IRQ] = {
 		.name		= "msoc-delta",
 		.handler	= fg_delta_msoc_irq_handler,
+		.wakeable	= true,
 	},
 	[BSOC_DELTA_IRQ] = {
 		.name		= "bsoc-delta",
