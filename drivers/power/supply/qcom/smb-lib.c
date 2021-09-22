@@ -601,35 +601,35 @@ static void smblib_rerun_apsd(struct smb_charger *chg)
 }
 
 #define PERIPHERAL_MASK         0xFF
-static u16 peripheral_base;
-static char log[256] = "";
-static char version[8] = "smb:01:";
+//static u16 peripheral_base;
+//static char log[256] = "";
+//static char version[8] = "smb:01:";
 static inline void dump_reg(struct smb_charger *chg, u16 addr,
 							const char *name)
 {
 	u8 reg;
 	int rc;
-	char reg_data[50] = "";
+	//char reg_data[50] = "";
 
-	if (NULL == name) {
-		strlcat(log, "\n", sizeof(log));
-		printk(log);
-		return;
-	}
+	//if (NULL == name) {
+		//strlcat(log, "\n", sizeof(log));
+		//printk(log);
+		//return;
+	//}
 
 	rc = smblib_read(chg, addr, &reg);
 	if (rc < 0)
 		smblib_err(chg, "Couldn't read OTG status rc=%d\n", rc);
-	/* print one peripheral base registers in one line */
-	if (peripheral_base != (addr & ~PERIPHERAL_MASK)) {
-		peripheral_base = addr & ~PERIPHERAL_MASK;
-		memset(log, 0, sizeof(log));
-		snprintf(reg_data, sizeof(reg_data), "%s%04x ", version, peripheral_base);
-		strlcat(log, reg_data, sizeof(log));
-	}
-	memset(reg_data, 0, sizeof(reg_data));
-	snprintf(reg_data, sizeof(reg_data), "%02x ", reg);
-	strlcat(log, reg_data, sizeof(log));
+	//* print one peripheral base registers in one line */
+	//if (peripheral_base != (addr & ~PERIPHERAL_MASK)) {
+	//	peripheral_base = addr & ~PERIPHERAL_MASK;
+	//	memset(log, 0, sizeof(log));
+	//	snprintf(reg_data, sizeof(reg_data), "%s%04x ", version, peripheral_base);
+	//	strlcat(log, reg_data, sizeof(log));
+	//}
+	//memset(reg_data, 0, sizeof(reg_data));
+	//snprintf(reg_data, sizeof(reg_data), "%02x ", reg);
+	//strlcat(log, reg_data, sizeof(log));
 
 	smblib_dbg(chg, PR_REGISTER, "%s - %04X = %02X\n",
 							name, addr, reg);
