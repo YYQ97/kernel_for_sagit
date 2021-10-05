@@ -618,7 +618,7 @@ struct devkmsg_user {
 
 static ssize_t devkmsg_write(struct kiocb *iocb, struct iov_iter *from)
 {
-#if 0
+#ifdef CONFIG_KERNEL_KMSG_WRITE
 	char *buf, *line;
 	int level = default_message_loglevel;
 	int facility = 1;	/* LOG_USER */
