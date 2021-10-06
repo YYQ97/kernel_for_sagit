@@ -360,10 +360,6 @@ EXPORT_SYMBOL(sync_fence_cancel_async);
 int sync_fence_wait(struct sync_fence *fence, long timeout)
 {
 	long ret;
-<<<<<<< HEAD
-=======
-//	int i;
->>>>>>> a0f2577f1068 (disable tracing/logging at various places Part 1)
 
 	if (timeout < 0)
 		timeout = MAX_SCHEDULE_TIMEOUT;
