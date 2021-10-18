@@ -7412,6 +7412,7 @@ static inline void hdd_display_periodic_stats(hdd_context_t *hdd_ctx, bool data_
 		data_in_time_period = false;
 	}
 }
+
 static void hdd_pld_request_bus_bandwidth(hdd_context_t *hdd_ctx,
 					  const uint64_t tx_packets,
 					  const uint64_t rx_packets)
