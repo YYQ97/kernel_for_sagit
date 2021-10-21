@@ -659,7 +659,7 @@ static SOC_ENUM_SINGLE_EXT_DECL(ultrasound_power, ultrasound_power_text);
 #endif
 
 static struct platform_device *spdev;
-static int msm_hifi_control;
+static int msm_hifi_control = MSM_HIFI_ON;
 
 static bool is_initial_boot;
 static bool codec_reg_done;
@@ -3171,10 +3171,12 @@ static int msm_hifi_put(struct snd_kcontrol *kcontrol,
 {
 	struct snd_soc_codec *codec = snd_soc_kcontrol_codec(kcontrol);
 
+#if 0
 	pr_debug("%s() ucontrol->value.integer.value[0] = %ld\n",
 		 __func__, ucontrol->value.integer.value[0]);
 
 	msm_hifi_control = ucontrol->value.integer.value[0];
+#endif
 	msm_hifi_ctrl(codec);
 
 	return 0;
