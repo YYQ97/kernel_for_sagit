@@ -234,7 +234,6 @@ int tcp_v4_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len)
 	/* OK, now commit destination to socket.  */
 	sk->sk_gso_type = SKB_GSO_TCPV4;
 	sk_setup_caps(sk, &rt->dst);
-	rt = NULL;
 
 	if (!tp->write_seq && likely(!tp->repair))
 		tp->write_seq = secure_tcp_sequence_number(inet->inet_saddr,
@@ -245,13 +244,9 @@ int tcp_v4_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len)
 
 	inet->inet_id = prandom_u32();
 
-	if (tcp_fastopen_defer_connect(sk, &err))
-		return err;
-	if (err)
-		goto failure;
-
 	err = tcp_connect(sk);
 
+	rt = NULL;
 	if (err)
 		goto failure;
 
@@ -373,9 +368,8 @@ void tcp_v4_err(struct sk_buff *icmp_skb, u32 info)
 	struct sock *sk;
 	struct sk_buff *skb;
 	struct request_sock *fastopen;
-	u32 seq, snd_una;
-	s32 remaining;
-	u32 delta_us;
+	__u32 seq, snd_una;
+	__u32 remaining;
 	int err;
 	struct net *net = dev_net(icmp_skb->dev);
 
@@ -482,12 +476,11 @@ void tcp_v4_err(struct sk_buff *icmp_skb, u32 info)
 					       TCP_TIMEOUT_INIT;
 		icsk->icsk_rto = inet_csk_rto_backoff(icsk, TCP_RTO_MAX);
 
-		tcp_mstamp_refresh(tp);
-		delta_us = (u32)(tp->tcp_mstamp - skb->skb_mstamp);
 		remaining = icsk->icsk_rto -
-			    usecs_to_jiffies(delta_us);
+			    min(icsk->icsk_rto,
+				tcp_time_stamp - tcp_skb_timestamp(skb));
 
-		if (remaining > 0) {
+		if (remaining) {
 			inet_csk_reset_xmit_timer(sk, ICSK_TIME_RETRANS,
 						  remaining, TCP_RTO_MAX);
 		} else {
@@ -804,7 +797,7 @@ static void tcp_v4_timewait_ack(struct sock *sk, struct sk_buff *skb)
 	tcp_v4_send_ack(sk, skb,
 			tcptw->tw_snd_nxt, tcptw->tw_rcv_nxt,
 			tcptw->tw_rcv_wnd >> tw->tw_rcv_wscale,
-			tcp_time_stamp_raw() + tcptw->tw_ts_offset,
+			tcp_time_stamp + tcptw->tw_ts_offset,
 			tcptw->tw_ts_recent,
 			tw->tw_bound_dev_if,
 			tcp_twsk_md5_key(tcptw),
@@ -832,7 +825,7 @@ static void tcp_v4_reqsk_send_ack(const struct sock *sk, struct sk_buff *skb,
 	tcp_v4_send_ack(sk, skb, seq,
 			tcp_rsk(req)->rcv_nxt,
 			req->rsk_rcv_wnd >> inet_rsk(req)->rcv_wscale,
-			tcp_time_stamp_raw() + tcp_rsk(req)->ts_off,
+			tcp_time_stamp + tcp_rsk(req)->ts_off,
 			req->ts_recent,
 			0,
 			tcp_md5_do_lookup(sk, (union tcp_md5_addr *)&ip_hdr(skb)->saddr,
@@ -1423,7 +1416,7 @@ int tcp_v4_do_rcv(struct sock *sk, struct sk_buff *skb)
 				sk->sk_rx_dst = NULL;
 			}
 		}
-		tcp_rcv_established(sk, skb, tcp_hdr(skb));
+		tcp_rcv_established(sk, skb, tcp_hdr(skb), skb->len);
 		return 0;
 	}
 
@@ -1857,9 +1850,6 @@ void tcp_v4_destroy_sock(struct sock *sk)
 
 	/* Cleanup up the write buffer. */
 	tcp_write_queue_purge(sk);
-
-	/* Check if we want to disable active TFO */
-	tcp_fastopen_active_disable_ofo_check(sk);
 
 	/* Cleans up our, hopefully empty, out_of_order_queue. */
 	skb_rbtree_purge(&tp->out_of_order_queue);
