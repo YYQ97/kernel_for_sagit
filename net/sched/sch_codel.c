@@ -73,8 +73,8 @@ static struct sk_buff *dequeue_func(struct codel_vars *vars, void *ctx)
 
 	if (skb) {
 		sch->qstats.backlog -= qdisc_pkt_len(skb);
+		prefetch(&skb->end); /* we'll need skb_shinfo() */
 	}
-	prefetch(&skb->end); /* we'll need skb_shinfo() */
 	return skb;
 }
 
