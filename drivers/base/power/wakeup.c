@@ -359,8 +359,10 @@ void device_wakeup_arm_wake_irqs(void)
 	int srcuidx;
 
 	srcuidx = srcu_read_lock(&wakeup_srcu);
-	list_for_each_entry_rcu(ws, &wakeup_sources, entry)
-		dev_pm_arm_wake_irq(ws->wakeirq);
+	list_for_each_entry_rcu(ws, &wakeup_sources, entry) {
+		if (ws->wakeirq)
+			dev_pm_arm_wake_irq(ws->wakeirq);
+	}
 	srcu_read_unlock(&wakeup_srcu, srcuidx);
 }
 
@@ -375,8 +377,10 @@ void device_wakeup_disarm_wake_irqs(void)
 	int srcuidx;
 
 	srcuidx = srcu_read_lock(&wakeup_srcu);
-	list_for_each_entry_rcu(ws, &wakeup_sources, entry)
-		dev_pm_disarm_wake_irq(ws->wakeirq);
+	list_for_each_entry_rcu(ws, &wakeup_sources, entry) {
+		if (ws->wakeirq)
+			dev_pm_disarm_wake_irq(ws->wakeirq);
+	}
 	srcu_read_unlock(&wakeup_srcu, srcuidx);
 }
 
@@ -412,7 +416,9 @@ int device_wakeup_disable(struct device *dev)
 		return -EINVAL;
 
 	ws = device_wakeup_detach(dev);
-	wakeup_source_unregister(ws);
+	if (ws)
+		wakeup_source_unregister(ws);
+
 	return 0;
 }
 EXPORT_SYMBOL_GPL(device_wakeup_disable);
