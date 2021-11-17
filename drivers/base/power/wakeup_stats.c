@@ -70,7 +70,7 @@ static ssize_t max_time_ms_show(struct device *dev,
 
 	if (ws->active) {
 		active_time = ktime_sub(ktime_get(), ws->last_time);
-		if (active_time.tv64 > max_time.tv64)
+		if (active_time > max_time)
 			max_time = active_time;
 	}
 	return sprintf(buf, "%lld\n", ktime_to_ms(max_time));
