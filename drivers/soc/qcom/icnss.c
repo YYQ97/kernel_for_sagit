@@ -270,7 +270,7 @@ enum icnss_driver_state {
 	ICNSS_DRIVER_PROBED,
 	ICNSS_FW_TEST_MODE,
 	ICNSS_PM_SUSPEND,
-	ICNSS_PM_SUSPEND_LATE,
+	ICNSS_PM_SUSPEND_NOIRQ,
 	ICNSS_SSR_REGISTERED,
 	ICNSS_PDR_REGISTERED,
 	ICNSS_PD_RESTART,
@@ -347,10 +347,10 @@ struct icnss_stats {
 	uint32_t pm_suspend_err;
 	uint32_t pm_resume;
 	uint32_t pm_resume_err;
-	uint32_t pm_suspend_late;
-	uint32_t pm_suspend_late_err;
-	uint32_t pm_resume_early;
-	uint32_t pm_resume_early_err;
+	uint32_t pm_suspend_noirq;
+	uint32_t pm_suspend_noirq_err;
+	uint32_t pm_resume_noirq;
+	uint32_t pm_resume_noirq_err;
 	uint32_t pm_stay_awake;
 	uint32_t pm_relax;
 
@@ -4098,8 +4098,8 @@ static int icnss_stats_show_state(struct seq_file *s, struct icnss_priv *priv)
 		case ICNSS_PM_SUSPEND:
 			seq_puts(s, "PM SUSPEND");
 			continue;
-		case ICNSS_PM_SUSPEND_LATE:
-			seq_puts(s, "PM SUSPEND LATE");
+		case ICNSS_PM_SUSPEND_NOIRQ:
+			seq_puts(s, "PM SUSPEND NOIRQ");
 			continue;
 		case ICNSS_SSR_REGISTERED:
 			seq_puts(s, "SSR REGISTERED");
@@ -4269,10 +4269,10 @@ static int icnss_stats_show(struct seq_file *s, void *data)
 	ICNSS_STATS_DUMP(s, priv, pm_suspend_err);
 	ICNSS_STATS_DUMP(s, priv, pm_resume);
 	ICNSS_STATS_DUMP(s, priv, pm_resume_err);
-	ICNSS_STATS_DUMP(s, priv, pm_suspend_late);
-	ICNSS_STATS_DUMP(s, priv, pm_suspend_late_err);
-	ICNSS_STATS_DUMP(s, priv, pm_resume_early);
-	ICNSS_STATS_DUMP(s, priv, pm_resume_early_err);
+	ICNSS_STATS_DUMP(s, priv, pm_suspend_noirq);
+	ICNSS_STATS_DUMP(s, priv, pm_suspend_noirq_err);
+	ICNSS_STATS_DUMP(s, priv, pm_resume_noirq);
+	ICNSS_STATS_DUMP(s, priv, pm_resume_noirq_err);
 	ICNSS_STATS_DUMP(s, priv, pm_stay_awake);
 	ICNSS_STATS_DUMP(s, priv, pm_relax);
 
@@ -4921,60 +4921,60 @@ out:
 	return ret;
 }
 
-static int icnss_pm_suspend_late(struct device *dev)
+static int icnss_pm_suspend_noirq(struct device *dev)
 {
 	struct icnss_priv *priv = dev_get_drvdata(dev);
 	int ret = 0;
 
 	if (priv->magic != ICNSS_MAGIC) {
-		icnss_pr_err("Invalid drvdata for pm suspend_late: dev %p, data %p, magic 0x%x\n",
+		icnss_pr_err("Invalid drvdata for pm suspend_noirq: dev %p, data %p, magic 0x%x\n",
 			     dev, priv, priv->magic);
 		return -EINVAL;
 	}
 
-	icnss_pr_vdbg("PM suspend_late, state: 0x%lx\n", priv->state);
+	icnss_pr_vdbg("PM suspend_noirq, state: 0x%lx\n", priv->state);
 
-	if (!priv->ops || !priv->ops->suspend_late ||
+	if (!priv->ops || !priv->ops->suspend_noirq ||
 	    !test_bit(ICNSS_DRIVER_PROBED, &priv->state))
 		goto out;
 
-	ret = priv->ops->suspend_late(dev);
+	ret = priv->ops->suspend_noirq(dev);
 
 out:
 	if (ret == 0) {
-		priv->stats.pm_suspend_late++;
-		set_bit(ICNSS_PM_SUSPEND_LATE, &priv->state);
+		priv->stats.pm_suspend_noirq++;
+		set_bit(ICNSS_PM_SUSPEND_NOIRQ, &priv->state);
 	} else {
-		priv->stats.pm_suspend_late_err++;
+		priv->stats.pm_suspend_noirq_err++;
 	}
 	return ret;
 }
 
-static int icnss_pm_resume_early(struct device *dev)
+static int icnss_pm_resume_noirq(struct device *dev)
 {
 	struct icnss_priv *priv = dev_get_drvdata(dev);
 	int ret = 0;
 
 	if (priv->magic != ICNSS_MAGIC) {
-		icnss_pr_err("Invalid drvdata for pm resume_early: dev %p, data %p, magic 0x%x\n",
+		icnss_pr_err("Invalid drvdata for pm resume_noirq: dev %p, data %p, magic 0x%x\n",
 			     dev, priv, priv->magic);
 		return -EINVAL;
 	}
 
-	icnss_pr_vdbg("PM resume_early, state: 0x%lx\n", priv->state);
+	icnss_pr_vdbg("PM resume_noirq, state: 0x%lx\n", priv->state);
 
-	if (!priv->ops || !priv->ops->resume_early ||
+	if (!priv->ops || !priv->ops->resume_noirq ||
 	    !test_bit(ICNSS_DRIVER_PROBED, &priv->state))
 		goto out;
 
-	ret = priv->ops->resume_early(dev);
+	ret = priv->ops->resume_noirq(dev);
 
 out:
 	if (ret == 0) {
-		priv->stats.pm_resume_early++;
-		clear_bit(ICNSS_PM_SUSPEND_LATE, &priv->state);
+		priv->stats.pm_resume_noirq++;
+		clear_bit(ICNSS_PM_SUSPEND_NOIRQ, &priv->state);
 	} else {
-		priv->stats.pm_resume_early_err++;
+		priv->stats.pm_resume_noirq_err++;
 	}
 	return ret;
 }
@@ -4983,8 +4983,8 @@ out:
 static const struct dev_pm_ops icnss_pm_ops = {
 	SET_SYSTEM_SLEEP_PM_OPS(icnss_pm_suspend,
 				icnss_pm_resume)
-	SET_LATE_SYSTEM_SLEEP_PM_OPS(icnss_pm_suspend_late,
-				      icnss_pm_resume_early)
+	SET_NOIRQ_SYSTEM_SLEEP_PM_OPS(icnss_pm_suspend_noirq,
+				      icnss_pm_resume_noirq)
 };
 
 static const struct of_device_id icnss_dt_match[] = {
