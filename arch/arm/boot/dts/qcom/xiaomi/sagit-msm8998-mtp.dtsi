@@ -678,6 +678,13 @@
 
 		qcom,spk-id-pin = <&spk_id_pin>;
 		qcom,rcv-id-pin = <&rcv_id_pin>;
+		
+		hph_en0_gpio: msm_cdc_pinctrl@67 {
+			status = "disabled";
+		};
+		hph_en1_gpio: msm_cdc_pinctrl@68 {
+			status = "disabled";
+		};
 	};
 
 	spk_id_pin: spk-id-pin@100 {
@@ -792,6 +799,15 @@
 
 		status = "ok";
 	};
+	
+	usb3: ssusb@a800000 {
+		/delete-property/ qcom,usb-dbm;
+	};
+
+	dbm_1p5: dbm@a8f8000 {
+		status = "disabled";
+	};
+
 };
 
 &spi_2 {
