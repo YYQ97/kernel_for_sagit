@@ -69,5 +69,6 @@
 	sound-tavil {
 		/delete-property/ qcom,usbc-analog-en1_gpio;
 		/delete-property/ qcom,usbc-analog-en2_n_gpio;
+		/delete-property/ qcom,wcd_us_euro_gpio;
 	};
 };
