@@ -54,8 +54,8 @@
  */
 #define THREAD_SLEEP_VALUE 7
 #define PAID 0
-#define COPY_TO_USER raw_copy_to_user
-#define COPY_FROM_USER raw_copy_from_user
+#define COPY_TO_USER copy_to_user
+#define COPY_FROM_USER copy_from_user
 #define KTIME_GET_NS ktime_get_real_ts64
 #define TIMESPEC timespec64
 
