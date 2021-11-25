@@ -146,7 +146,7 @@ static atomic_t gcma_cc_load_failed_pages = ATOMIC_INIT(0);
 static atomic_t gcma_cc_evicted_pages = ATOMIC_INIT(0);
 static atomic_t gcma_cc_reclaimed_pages = ATOMIC_INIT(0);
 static atomic_t gcma_cc_invalidated_pages = ATOMIC_INIT(0);
-static atomic_t gcma_cc_invalidated_inodes = ATOMIC_INIT(0);
+static atomic_t __maybe_unused gcma_cc_invalidated_inodes = ATOMIC_INIT(0);
 static atomic_t gcma_cc_invalidated_fses = ATOMIC_INIT(0);
 static atomic_t gcma_cc_invalidate_failed_fses = ATOMIC_INIT(0);
 
