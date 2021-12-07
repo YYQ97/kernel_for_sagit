@@ -33,6 +33,7 @@ static int dev_pm_attach_wake_irq(struct device *dev, int irq,
 				  struct wake_irq *wirq)
 {
 	unsigned long flags;
+	int err;
 
 	if (!dev || !wirq)
 		return -EINVAL;
@@ -44,11 +45,12 @@ static int dev_pm_attach_wake_irq(struct device *dev, int irq,
 		return -EEXIST;
 	}
 
-	dev->power.wakeirq = wirq;
-	device_wakeup_attach_irq(dev, wirq);
+	err = device_wakeup_attach_irq(dev, wirq);
+	if (!err)
+		dev->power.wakeirq = wirq;
 
 	spin_unlock_irqrestore(&dev->power.lock, flags);
-	return 0;
+	return err;
 }
 
 /**
