@@ -171,7 +171,6 @@ void *__ion_map_kernel(struct ion_buffer *buffer)
 		}
 	}
 	mutex_unlock(&buffer->kmap_lock);
-
 	return vaddr;
 }
 
