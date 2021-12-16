@@ -910,7 +910,6 @@
 		qcom,batt-id-range-pct = <15>;
 		#include "batterydata-sagit-atl-3350mAh.dtsi"
 		#include "batterydata-sagit-sdi-3440mAh.dtsi"
-		#include "batterydata-itech-3020mAh.dtsi"
 	};
 };
 
