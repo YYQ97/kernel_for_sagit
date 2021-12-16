@@ -840,7 +840,6 @@
 		qcom,batt-id-range-pct = <15>;
 		#include "batterydata-chiron-atl-3400mAh.dtsi"
 		#include "batterydata-chiron-cos-3400mAh.dtsi"
-		#include "batterydata-itech-3020mAh.dtsi"
 	};
 };
 
