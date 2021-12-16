@@ -2,10 +2,10 @@
  * Synaptics DSX touchscreen driver
  *
  * Copyright (C) 2012-2015 Synaptics Incorporated. All rights reserved.
- * Copyright (C) 2018 XiaoMi, Inc.
  *
  * Copyright (C) 2012 Alexandra Chin <alexandra.chin@tw.synaptics.com>
  * Copyright (C) 2012 Scott Lin <scott.lin@tw.synaptics.com>
+ * Copyright (C) 2018 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,6 +34,7 @@
 
 #include <linux/kernel.h>
 #include <linux/module.h>
+#include <linux/proc_fs.h>
 #include <linux/slab.h>
 #include <linux/interrupt.h>
 #include <linux/delay.h>
@@ -43,13 +44,11 @@
 #include <linux/regulator/consumer.h>
 #include <linux/input/synaptics_dsx.h>
 #include "synaptics_dsx_core.h"
-
 #ifdef KERNEL_ABOVE_2_6_38
 #include <linux/input/mt.h>
 #endif
 
 #if defined(CONFIG_SECURE_TOUCH)
-#include <linux/i2c.h>
 #include <linux/pm_runtime.h>
 #include <linux/errno.h>
 #endif
@@ -63,6 +62,8 @@
 
 #define INPUT_PHYS_NAME "synaptics_dsx/touch_input"
 #define STYLUS_PHYS_NAME "synaptics_dsx/stylus"
+
+#define PROC_SYMLINK_PATH "touchpanel"
 
 #define VIRTUAL_KEY_MAP_FILE_NAME "virtualkeys." PLATFORM_DRIVER_NAME
 
@@ -236,6 +237,12 @@ static ssize_t synaptics_rmi4_irq_enable_show(struct device *dev,
 		struct device_attribute *attr, char *buf);
 
 static ssize_t synaptics_rmi4_irq_enable_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count);
+
+static ssize_t synaptics_rmi4_reversed_keys_show(struct device *dev,
+		struct device_attribute *attr, char *buf);
+
+static ssize_t synaptics_rmi4_reversed_keys_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count);
 
 static ssize_t synaptics_rmi4_panel_color_show(struct device *dev,
@@ -758,6 +765,9 @@ static struct device_attribute attrs[] = {
 	__ATTR(0dbutton, (S_IRUGO | S_IWUSR),
 			synaptics_rmi4_0dbutton_show,
 			synaptics_rmi4_0dbutton_store),
+	__ATTR(capacitive_keys_enable, (S_IRUGO | S_IWUSR),
+			synaptics_rmi4_0dbutton_show,
+			synaptics_rmi4_0dbutton_store),
 	__ATTR(suspend, S_IWUSR,
 			synaptics_rmi4_show_error,
 			synaptics_rmi4_suspend_store),
@@ -770,12 +780,18 @@ static struct device_attribute attrs[] = {
 	__ATTR(irq_enable, (S_IRUGO | S_IWUSR),
 			synaptics_rmi4_irq_enable_show,
 			synaptics_rmi4_irq_enable_store),
+	__ATTR(reversed_keys_enable, (S_IRUGO | S_IWUSR),
+			synaptics_rmi4_reversed_keys_show,
+			synaptics_rmi4_reversed_keys_store),
 };
+
+bool capacitive_keys_enabled;
+EXPORT_SYMBOL(capacitive_keys_enabled);
 
 #if defined(CONFIG_SECURE_TOUCH)
 static DEVICE_ATTR(secure_touch_enable, (S_IRUGO | S_IWUSR | S_IWGRP), synaptics_secure_touch_enable_show, synaptics_secure_touch_enable_store);
 static DEVICE_ATTR(secure_touch, S_IRUGO, synaptics_secure_touch_show, NULL);
-#if 0
+
 static int synaptics_secure_touch_clk_prepare_enable(
 		struct synaptics_rmi4_data *rmi4_data)
 {
@@ -803,13 +819,14 @@ static void synaptics_secure_touch_clk_disable_unprepare(
 	clk_disable_unprepare(rmi4_data->core_clk);
 	clk_disable_unprepare(rmi4_data->iface_clk);
 }
-#endif
+
 static void synaptics_secure_touch_init(struct synaptics_rmi4_data *data)
 {
+	int ret = 0;
+
 	data->st_initialized = 0;
 	init_completion(&data->st_powerdown);
 	init_completion(&data->st_irq_processed);
-#if 0
 	/* Get clocks */
 	data->core_clk = clk_get(data->pdev->dev.parent, "core_clk");
 	if (IS_ERR(data->core_clk)) {
@@ -826,14 +843,13 @@ static void synaptics_secure_touch_init(struct synaptics_rmi4_data *data)
 			"%s: error on clk_get(iface_clk)\n", __func__);
 		goto err_iface_clk;
 	}
-#endif
+
 	data->st_initialized = 1;
 	return;
-#if 0
+
 err_iface_clk:
 		clk_put(data->core_clk);
 		data->core_clk = NULL;
-#endif
 }
 static void synaptics_secure_touch_notify(struct synaptics_rmi4_data *data)
 {
@@ -924,6 +940,7 @@ static ssize_t synaptics_secure_touch_enable_store(struct device *dev,
 		if (atomic_read(&data->st_enabled) == 0)
 			break;
 
+		synaptics_secure_touch_clk_disable_unprepare(data);
 		pm_runtime_put_sync(adapter);
 		atomic_set(&data->st_enabled, 0);
 		synaptics_secure_touch_notify(data);
@@ -944,13 +961,12 @@ static ssize_t synaptics_secure_touch_enable_store(struct device *dev,
 			err = -EIO;
 			break;
 		}
-#if 0
+
 		if (synaptics_secure_touch_clk_prepare_enable(data) < 0) {
 			pm_runtime_put_sync(adapter);
 			err = -EIO;
 			break;
 		}
-#endif
 		reinit_completion(&data->st_powerdown);
 		reinit_completion(&data->st_irq_processed);
 		atomic_set(&data->st_enabled, 1);
@@ -962,7 +978,6 @@ static ssize_t synaptics_secure_touch_enable_store(struct device *dev,
 		err = -EINVAL;
 		break;
 	}
-       dev_err(data->pdev->dev.parent, "synaptics_secure_touch_enable_store err=%x\n", err);
 	return err;
 }
 
@@ -1135,6 +1150,7 @@ static ssize_t synaptics_rmi4_0dbutton_store(struct device *dev,
 	}
 
 	rmi4_data->button_0d_enabled = input;
+	capacitive_keys_enabled = input;
 
 	return count;
 }
@@ -1215,6 +1231,34 @@ static ssize_t synaptics_rmi4_irq_enable_store(struct device *dev,
 		enable_irq(rmi4_data->irq);
 	else
 		disable_irq(rmi4_data->irq);
+
+	return count;
+}
+
+static ssize_t synaptics_rmi4_reversed_keys_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
+
+	return snprintf(buf, PAGE_SIZE, "%u\n",
+			rmi4_data->enable_reversed_keys);
+}
+
+static ssize_t synaptics_rmi4_reversed_keys_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	unsigned int input;
+	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
+
+	if (sscanf(buf, "%u", &input) != 1)
+		return -EINVAL;
+
+	input = input > 0 ? 1 : 0;
+
+	if (rmi4_data->enable_reversed_keys == input)
+		return count;
+
+	rmi4_data->enable_reversed_keys = input;
 
 	return count;
 }
@@ -1442,7 +1486,7 @@ static int synaptics_rmi4_f12_abs_report(struct synaptics_rmi4_data *rmi4_data,
 #if defined(REPORT_2D_PRESSURE) || defined(F51_DISCRETE_FORCE)
 	int pressure;
 #endif
-	int touchs = 0;
+	int touchs;
 #ifdef REPORT_2D_PRESSURE
 	unsigned char f_fingers;
 	unsigned char f_lsb;
@@ -1767,6 +1811,19 @@ static int synaptics_rmi4_f12_abs_report(struct synaptics_rmi4_data *rmi4_data,
 	return touch_count;
 }
 
+static void synaptics_rmi4_report_key(struct synaptics_rmi4_data *rmi4_data,
+		int key, int status)
+{
+	if (rmi4_data->enable_reversed_keys) {
+		if (key == KEY_MENU)
+			key = KEY_BACK;
+		else if (key == KEY_BACK)
+			key =  KEY_MENU;
+	}
+
+	input_report_key(rmi4_data->input_dev, key, status);
+}
+
 static void synaptics_rmi4_f1a_report(struct synaptics_rmi4_data *rmi4_data,
 		struct synaptics_rmi4_fn *fhandler)
 {
@@ -1780,14 +1837,12 @@ static void synaptics_rmi4_f1a_report(struct synaptics_rmi4_data *rmi4_data,
 	unsigned short data_addr = fhandler->full_addr.data_base;
 	struct synaptics_rmi4_f1a_handle *f1a = fhandler->data;
 	static unsigned char do_once = 1;
-	static bool current_status[MAX_NUMBER_OF_BUTTONS];
 #ifdef NO_0D_WHILE_2D
 	static bool before_2d_status[MAX_NUMBER_OF_BUTTONS];
 	static bool while_2d_status[MAX_NUMBER_OF_BUTTONS];
 #endif
 
 	if (do_once) {
-		memset(current_status, 0, sizeof(current_status));
 #ifdef NO_0D_WHILE_2D
 		memset(before_2d_status, 0, sizeof(before_2d_status));
 		memset(while_2d_status, 0, sizeof(while_2d_status));
@@ -1819,12 +1874,6 @@ static void synaptics_rmi4_f1a_report(struct synaptics_rmi4_data *rmi4_data,
 		shift = button % 8;
 		status = ((data[index] >> shift) & MASK_1BIT);
 
-		if (current_status[button] == status) {
-			if (!rmi4_data->suspend)
-				continue;
-		} else
-			current_status[button] = status;
-
 #ifdef NO_0D_WHILE_2D
 		if (rmi4_data->fingers_on_2d == false) {
 			if (status == 1) {
@@ -1839,14 +1888,14 @@ static void synaptics_rmi4_f1a_report(struct synaptics_rmi4_data *rmi4_data,
 			}
 
 			touch_count++;
-			input_report_key(rmi4_data->input_dev,
+			synaptics_rmi4_report_key(rmi4_data,
 					f1a->button_map[button],
 					status);
 		} else {
 			if (before_2d_status[button] == 1) {
 				before_2d_status[button] = 0;
 				touch_count++;
-				input_report_key(rmi4_data->input_dev,
+				synaptics_rmi4_report_key(rmi4_data,
 						f1a->button_map[button],
 						status);
 			} else {
@@ -1858,7 +1907,7 @@ static void synaptics_rmi4_f1a_report(struct synaptics_rmi4_data *rmi4_data,
 		}
 #else
 		touch_count++;
-		input_report_key(rmi4_data->input_dev,
+		synaptics_rmi4_report_key(rmi4_data,
 				f1a->button_map[button],
 				status);
 #endif
@@ -2209,6 +2258,7 @@ static int synaptics_rmi4_query_chip_id(struct synaptics_rmi4_data *rmi4_data)
 		rmi4_data->chip_id = -1; /* Set chip_id -1 to ensure it won't do firmware upgrading */
 		return -EINVAL;
 	}
+
 	return 0;
 }
 
@@ -3197,6 +3247,7 @@ static int synaptics_rmi4_f1a_init(struct synaptics_rmi4_data *rmi4_data,
 		goto error_exit;
 
 	rmi4_data->button_0d_enabled = 1;
+	capacitive_keys_enabled = 1;
 
 	return 0;
 
@@ -3695,8 +3746,6 @@ static void synaptics_rmi4_set_params(struct synaptics_rmi4_data *rmi4_data)
 			ABS_MT_TOUCH_MINOR, 0,
 			rmi4_data->max_touch_width, 0, 0);
 #endif
-	set_bit(KEY_SLEEP, rmi4_data->input_dev->keybit);
-	input_set_capability(rmi4_data->input_dev, EV_KEY, KEY_SLEEP);
 
 #ifdef REPORT_2D_PRESSURE
 	if (rmi4_data->report_pressure) {
@@ -3973,6 +4022,36 @@ static int synaptics_rmi4_input_event(struct input_dev *dev,
 	return 0;
 }
 
+static ssize_t synaptics_rmi4_input_symlink(struct synaptics_rmi4_data *rmi4_data) {
+	char *driver_path;
+	int ret = 0;
+
+	if (rmi4_data->input_proc) {
+		proc_remove(rmi4_data->input_proc);
+		rmi4_data->input_proc = NULL;
+	}
+
+	driver_path = kzalloc(PATH_MAX, GFP_KERNEL);
+	if (!driver_path) {
+		pr_err("%s: failed to allocate memory\n", __func__);
+		return -ENOMEM;
+	}
+
+	sprintf(driver_path, "/sys%s",
+			kobject_get_path(&rmi4_data->input_dev->dev.kobj, GFP_KERNEL));
+
+	pr_debug("%s: driver_path=%s\n", __func__, driver_path);
+
+	rmi4_data->input_proc = proc_symlink(PROC_SYMLINK_PATH, NULL, driver_path);
+	if (!rmi4_data->input_proc) {
+		ret = -ENOMEM;
+	}
+
+	kfree(driver_path);
+
+	return ret;
+}
+
 static int synaptics_rmi4_set_input_dev(struct synaptics_rmi4_data *rmi4_data)
 {
 	int retval;
@@ -4024,6 +4103,13 @@ static int synaptics_rmi4_set_input_dev(struct synaptics_rmi4_data *rmi4_data)
 				"%s: Failed to register input device\n",
 				__func__);
 		goto err_register_input;
+	}
+
+	retval = synaptics_rmi4_input_symlink(rmi4_data);
+	if (retval < 0) {
+		dev_err(rmi4_data->pdev->dev.parent,
+				"%s: Failed to symlink input device\n",
+				__func__);
 	}
 
 	if (!rmi4_data->stylus_enable)
@@ -4316,8 +4402,13 @@ exit:
 static int synaptics_rmi4_free_fingers(struct synaptics_rmi4_data *rmi4_data)
 {
 	unsigned char ii;
+	struct synaptics_rmi4_device_info *rmi;
+	struct synaptics_rmi4_fn *fhandler;
+	struct synaptics_rmi4_f1a_handle *f1a = NULL;
 
 	mutex_lock(&(rmi4_data->rmi4_report_mutex));
+
+	rmi = &(rmi4_data->rmi4_mod_info);
 
 #ifdef TYPE_B_PROTOCOL
 	for (ii = 0; ii < rmi4_data->num_of_fingers; ii++) {
@@ -4346,6 +4437,20 @@ static int synaptics_rmi4_free_fingers(struct synaptics_rmi4_data *rmi4_data)
 		}
 		input_sync(rmi4_data->stylus_dev);
 	}
+
+	if (!list_empty(&rmi->support_fn_list)) {
+		list_for_each_entry(fhandler, &rmi->support_fn_list, link) {
+			if (fhandler->fn_number == SYNAPTICS_RMI4_F1A)
+					f1a = fhandler->data;
+			}
+	}
+
+	if (f1a && f1a->valid_button_count && f1a->button_map)
+		for (ii = 0; ii < f1a->valid_button_count; ii++) {
+			input_report_key(rmi4_data->input_dev, f1a->button_map[ii], 0);
+			input_sync(rmi4_data->input_dev);
+		}
+
 	rmi4_data->touchs = 0;
 
 	mutex_unlock(&(rmi4_data->rmi4_report_mutex));
@@ -4799,7 +4904,7 @@ static int tpdbg_open(struct inode *inode, struct file *file)
 	return 0;
 }
 
-static ssize_t tpdbg_read(struct file *file, char __user *buf, size_t size, loff_t *ppos)
+ssize_t tpdbg_read(struct file *file, char __user *buf, size_t size, loff_t *ppos)
 {
 	const char *str = "cmd support as below:\n \
 				\necho \"irq-disable\" or \"irq-enable\" to ctrl irq\n \
@@ -4822,7 +4927,7 @@ static ssize_t tpdbg_read(struct file *file, char __user *buf, size_t size, loff
 	return len;
 }
 
-static ssize_t tpdbg_write(struct file *file, const char __user *buf, size_t size, loff_t *ppos)
+ssize_t tpdbg_write(struct file *file, const char __user *buf, size_t size, loff_t *ppos)
 {
 	struct synaptics_rmi4_data *rmi4_data = file->private_data;
 	char *cmd = kzalloc(size + 1, GFP_KERNEL);
@@ -4856,7 +4961,7 @@ out:
 	return ret;
 }
 
-static int tpdbg_release(struct inode *inode, struct file *file)
+int tpdbg_release (struct inode *inode, struct file *file)
 {
 	file->private_data = NULL;
 
@@ -4913,6 +5018,8 @@ static int synaptics_rmi4_probe(struct platform_device *pdev)
 	rmi4_data->irq_enabled = false;
 	rmi4_data->fingers_on_2d = false;
 	rmi4_data->wakeup_en = false;
+	rmi4_data->enable_reversed_keys = false;
+	rmi4_data->input_proc = NULL;
 
 
 	rmi4_data->reset_device = synaptics_rmi4_reset_device;
@@ -4974,6 +5081,7 @@ static int synaptics_rmi4_probe(struct platform_device *pdev)
 				__func__);
 		goto err_pinctrl_init;
 	}
+
 	if (hw_if->ui_hw_init) {
 		retval = hw_if->ui_hw_init(rmi4_data);
 		if (retval < 0) {
@@ -5134,7 +5242,9 @@ static int synaptics_rmi4_probe(struct platform_device *pdev)
 
 	synaptics_secure_touch_init(rmi4_data);
 	synaptics_secure_touch_stop(rmi4_data, 1);
+
 	return retval;
+
 
 err_sysfs_panel_vendor:
 #if defined(CONFIG_SECURE_TOUCH)
@@ -5185,6 +5295,7 @@ err_set_input_dev:
 
 	if (bdata->power_gpio >= 0)
 		synaptics_rmi4_gpio_setup(bdata->power_gpio, false, 0, 0, NULL);
+
 err_ui_hw_init:
 err_pinctrl_init:
 	if (rmi4_data->ts_pinctrl) {
@@ -5332,7 +5443,7 @@ static void synaptics_rmi4_f11_wg(struct synaptics_rmi4_data *rmi4_data,
 static void mdss_regulator_ctrl(struct synaptics_rmi4_data *rmi4_data, unsigned int flag, bool enable)
 {
 	int retval = 0;
-	static unsigned int status = 0;
+	static unsigned int status;
 
 	if (rmi4_data == NULL)
 		return;
@@ -5569,13 +5680,13 @@ static int synaptics_rmi4_fb_notifier_cb(struct notifier_block *self,
 			}
 		}
 	}
+
 	return 0;
 }
 
 static int synaptics_rmi4_fb_notifier_cb_tddi(struct notifier_block *self,
 		unsigned long event, void *data)
 {
-# if 0
 	int *transition;
 	struct fb_event *evdata = data;
 	struct synaptics_rmi4_data *rmi4_data =
@@ -5637,10 +5748,9 @@ static int synaptics_rmi4_fb_notifier_cb_tddi(struct notifier_block *self,
 			}
 		}
 	}
-#endif
+
 	return 0;
 }
-
 #endif
 
 #ifdef USE_EARLYSUSPEND
@@ -5738,6 +5848,7 @@ static int synaptics_rmi4_suspend(struct device *dev)
 
 	if (rmi4_data->stay_awake || rmi4_data->suspend)
 		return 0;
+
 	if (bdata->cut_off_power || (rmi4_data->chip_is_tddi && !rmi4_data->wakeup_en)) {
 		if (rmi4_data->fw_updating)
 			return 0;
@@ -5798,7 +5909,7 @@ static int synaptics_rmi4_resume(struct device *dev)
 		rmi4_data->hw_if->board_data;
 
 #ifdef CONFIG_FB
-	static int skip = 0;
+	static int skip;
 
 	if (skip == 0) {
 		skip = 1;

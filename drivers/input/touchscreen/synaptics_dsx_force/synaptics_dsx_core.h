@@ -2,10 +2,10 @@
  * Synaptics DSX touchscreen driver
  *
  * Copyright (C) 2012-2015 Synaptics Incorporated. All rights reserved.
- * Copyright (C) 2018 XiaoMi, Inc.
  *
  * Copyright (C) 2012 Alexandra Chin <alexandra.chin@tw.synaptics.com>
  * Copyright (C) 2012 Scott Lin <scott.lin@tw.synaptics.com>
+ * Copyright (C) 2018 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -411,6 +411,7 @@ struct synaptics_rmi4_data {
 	bool disable_data_dump;
 	bool dump_flags;
 #endif
+	bool enable_reversed_keys;
 
 	int (*reset_device)(struct synaptics_rmi4_data *rmi4_data,
 			bool rebuild);
@@ -433,8 +434,6 @@ struct synaptics_rmi4_data {
 #ifdef CONFIG_TOUCH_DEBUG_FS
 	struct dentry *debugfs;
 #endif
-	struct proc_dir_entry *tp_fw_version_proc;
-	struct proc_dir_entry *tp_lockdown_info_proc;
 
 #if defined(CONFIG_SECURE_TOUCH)
 	atomic_t st_enabled;
@@ -445,6 +444,8 @@ struct synaptics_rmi4_data {
 	struct clk *core_clk;
 	struct clk *iface_clk;
 #endif
+
+	struct proc_dir_entry *input_proc;
 };
 
 struct synaptics_dsx_bus_access {
