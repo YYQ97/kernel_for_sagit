@@ -26,7 +26,7 @@ extern "C" {
 #include "TFA_I2C.h"
 #endif
 
-#define TFA98XX_API_REV_STR "v6.7.11"
+#define TFA98XX_API_REV_STR "v6.7.14"
 
 #include "tfa_device.h"
 
