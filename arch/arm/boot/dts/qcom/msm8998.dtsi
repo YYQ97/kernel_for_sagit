@@ -288,6 +288,8 @@
 			};
 		};
 		energy-costs {
+		        compatible = "sched-energy";
+		        
 			CPU_COST_0: core-cost0 {
 				busy-cost-data = <
 					134 154
