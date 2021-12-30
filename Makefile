@@ -660,12 +660,10 @@ ARCH_AFLAGS :=
 ARCH_CFLAGS :=
 include arch/$(SRCARCH)/Makefile
 
-ifdef CONFIG_LLVM_POLLY
 ifeq ($(cc-name),clang)
 KBUILD_CFLAGS	+= -O3
 else
 KBUILD_CFLAGS	+= -O2
-endif
 endif
 
 KBUILD_CFLAGS	+= $(call cc-option,-fno-delete-null-pointer-checks,)
