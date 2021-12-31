@@ -556,7 +556,7 @@ static void glink_lbsrv_free_data(void *data, uint32_t buf_type)
 static void *copy_linear_data(struct rx_work_info *tmp_rx_work_info)
 {
 	char *data;
-	struct ch_info *rx_ch_info = tmp_rx_work_info->rx_ch_info;
+	struct ch_info __maybe_unused *rx_ch_info = tmp_rx_work_info->rx_ch_info;
 
 	data = kmalloc(tmp_rx_work_info->size, GFP_KERNEL);
 	if (data)
@@ -571,7 +571,7 @@ static void *copy_linear_data(struct rx_work_info *tmp_rx_work_info)
 static void *copy_vector_data(struct rx_work_info *tmp_rx_work_info)
 {
 	uint32_t num_bufs = 0;
-	struct ch_info *rx_ch_info = tmp_rx_work_info->rx_ch_info;
+	struct ch_info __maybe_unused *rx_ch_info = tmp_rx_work_info->rx_ch_info;
 	struct lbsrv_vec *tmp_vec_info;
 	void *buf, *pbuf, *dest_buf;
 	size_t offset = 0;

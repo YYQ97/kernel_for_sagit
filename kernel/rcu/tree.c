@@ -2690,7 +2690,7 @@ static void rcu_do_batch(struct rcu_state *rsp, struct rcu_data *rdp)
 	WARN_ON_ONCE(cpu_is_offline(smp_processor_id()));
 	bl = rdp->blimit;
 //	trace_rcu_batch_start(rsp->name, rcu_segcblist_n_lazy_cbs(&rdp->cblist),
-			      rcu_segcblist_n_cbs(&rdp->cblist), bl);
+//			      rcu_segcblist_n_cbs(&rdp->cblist), bl);
 	rcu_segcblist_extract_done_cbs(&rdp->cblist, &rcl);
 	local_irq_restore(flags);
 

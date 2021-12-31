@@ -158,7 +158,7 @@ void mdss_dsi_set_reg(struct mdss_dsi_ctrl_pdata *ctrl, int off,
 void mdss_dsi_clk_req(struct mdss_dsi_ctrl_pdata *ctrl,
 	struct dsi_panel_clk_ctrl *clk_ctrl)
 {
-	enum dsi_clk_req_client client = clk_ctrl->client;
+	enum dsi_clk_req_client __maybe_unused client = clk_ctrl->client;
 	int enable = clk_ctrl->state;
 	void *clk_handle = ctrl->mdp_clk_handle;
 

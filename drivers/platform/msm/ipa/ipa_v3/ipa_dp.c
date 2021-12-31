@@ -3464,7 +3464,7 @@ static int ipa3_assign_policy(struct ipa_sys_connect_params *in,
  */
 static void ipa3_tx_client_rx_notify_release(void *user1, int user2)
 {
-	struct ipa_tx_data_desc *dd = (struct ipa_tx_data_desc *)user1;
+	struct ipa_tx_data_desc __maybe_unused *dd = (struct ipa_tx_data_desc *)user1;
 	int ep_idx = user2;
 
 	IPADBG_LOW("Received data desc anchor:%p\n", dd);
